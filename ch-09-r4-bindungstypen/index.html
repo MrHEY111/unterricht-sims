@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Eigenschaften und Bindungstyp</title>
+<style>
+/* ============================================================
+   Eigenschaften und Bindungstyp — CH-09 R4 Bindungstypen
+   Einzeldatei, offline lauffaehig, keine externen Abhaengigkeiten.
+   Zielgeraet: iPad, Safari, Querformat, 1024x768, kein Scrollen.
+   ============================================================ */
+
+/* --- Farbwerte: Laborarbeitsplatz, kuehles Grau + Kupfer als Akzent --- */
+:root{
+  --grund:      #e7eaec;   /* Hintergrund Arbeitsflaeche */
+  --feld:       #ffffff;   /* Panelflaechen */
+  --tinte:      #16202b;   /* Haupttext */
+  --gedaempft:  #5c6b7a;   /* Sekundaertext, Beschriftungen */
+  --linie:      #c6ced4;   /* Trennlinien, Rahmen */
+  --kupfer:     #9c5a2d;   /* Akzent: Auswahl, aktive Elemente */
+  --kupfer-hell:#f3e6dc;   /* Akzentflaeche */
+  --lampe:      #f0c419;   /* leuchtende Lampe */
+  --warn:       #e3a008;   /* Widerspruchshinweis */
+  --warn-feld:  #fdf6e3;
+  --tiefe:      0 1px 2px rgba(22,32,43,.10), 0 2px 8px rgba(22,32,43,.06);
+}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+
+html,body{
+  height:100%; margin:0; overflow:hidden;
+  background:var(--grund); color:var(--tinte);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.4;
+  -webkit-text-size-adjust:100%;
+}
+
+button{font:inherit; color:inherit; cursor:pointer;}
+
+/* --- Kopfzeile ------------------------------------------------ */
+header{
+  height:52px; display:flex; align-items:center; gap:16px;
+  padding:0 16px; background:var(--tinte); color:#fff;
+}
+header h1{
+  margin:0; font-size:16px; font-weight:600; letter-spacing:.01em;
+}
+.phasenband{display:flex; gap:6px; margin-left:auto; align-items:center;}
+.phasenchip{
+  font-size:11px; letter-spacing:.10em; text-transform:uppercase;
+  padding:5px 10px; border-radius:3px;
+  background:rgba(255,255,255,.10); color:rgba(255,255,255,.55);
+}
+.phasenchip.aktiv{background:var(--kupfer); color:#fff;}
+.reset{
+  margin-left:10px; min-height:34px; padding:0 14px;
+  background:transparent; color:#fff; border:1px solid rgba(255,255,255,.35);
+  border-radius:4px; font-size:13px;
+}
+.reset:active{background:rgba(255,255,255,.15);}
+
+/* --- Grundraster der drei Phasen ------------------------------ */
+main{
+  height:calc(100% - 52px); padding:12px; display:none; gap:12px;
+}
+main.sichtbar{display:grid;}
+
+#phaseA{grid-template-columns:198px minmax(0,1fr) 358px;}
+#phaseB{grid-template-columns:198px 1fr;}
+#phaseC{grid-template-rows:1fr auto;}
+
+.panel{
+  background:var(--feld); border-radius:6px; box-shadow:var(--tiefe);
+  padding:12px; display:flex; flex-direction:column; min-height:0;
+}
+.panel h2{
+  margin:0 0 10px; font-size:11px; font-weight:700;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--gedaempft);
+}
+
+/* --- Stoffregal ----------------------------------------------- */
+.regal{display:flex; flex-direction:column; gap:7px; min-height:0;}
+.probe{
+  min-height:52px; padding:8px 10px; text-align:left;
+  background:var(--feld); border:1.5px solid var(--linie);
+  border-radius:5px; display:flex; flex-direction:column; justify-content:center;
+}
+.probe .alltag{font-size:14px; font-weight:600; line-height:1.2;}
+.probe .stoff{font-size:12px; color:var(--gedaempft);}
+.probe.gewaehlt{
+  border-color:var(--kupfer); background:var(--kupfer-hell);
+  box-shadow:inset 3px 0 0 var(--kupfer);
+}
+.probe.verteilt{opacity:.5;}
+.probe .gruppenmarke{
+  font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--kupfer); font-weight:700; margin-top:2px;
+}
+.regalaktion{
+  margin-top:8px; min-height:44px; border:1px solid var(--linie);
+  background:var(--feld); border-radius:5px; font-size:13px; color:var(--gedaempft);
+}
+.regalaktion:active{background:var(--grund);}
+
+/* --- Arbeitsplatz / Pruefstationen ---------------------------- */
+.stationen{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; flex:1; min-height:0;}
+.station{
+  border:1.5px solid var(--linie); border-radius:5px; background:var(--feld);
+  padding:10px 8px; display:flex; flex-direction:column; align-items:center;
+  text-align:center; min-height:44px;
+}
+.station:active{background:var(--grund);}
+.station .nr{
+  font-size:10px; letter-spacing:.14em; color:var(--gedaempft); font-weight:700;
+}
+.station .titel{font-size:12.5px; font-weight:600; margin:3px 0 6px; line-height:1.25;}
+.station .buehne{flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-width:0;}
+.station{min-width:0;}
+.station .buehne svg{width:100%; max-width:150px; height:auto;}
+.station .ausgabe{
+  font-size:12px; min-height:36px; color:var(--gedaempft);
+  display:flex; align-items:center; justify-content:center; line-height:1.25;
+}
+.station.laeuft{border-color:var(--kupfer); box-shadow:0 0 0 3px var(--kupfer-hell);}
+
+.hinweiszeile{
+  margin-top:10px; min-height:34px; font-size:13px; color:var(--gedaempft);
+  display:flex; align-items:center; gap:8px;
+}
+
+/* --- Ergebnis-Badges: farbig, ploppen auf --------------------- */
+.badge{
+  display:inline-block; padding:4px 10px; border-radius:12px;
+  font-size:12px; font-weight:600; line-height:1.25;
+  animation:plopp .35s ease-out;
+}
+.badge.b-ja{background:#f7e5a4; color:#6d5200;}
+.badge.b-nein{background:#dde2e6; color:#3f4c59;}
+.badge.b-verformt{background:var(--kupfer-hell); color:var(--kupfer);}
+.badge.b-zerbricht{background:var(--warn-feld); color:#8a6402; border:1px solid var(--warn);}
+@keyframes plopp{
+  0%{transform:scale(.5); opacity:0;}
+  70%{transform:scale(1.12);}
+  100%{transform:scale(1); opacity:1;}
+}
+
+/* --- SVG-Zustaende der Instrumente ---------------------------- */
+.glas{fill:none; stroke:var(--gedaempft); stroke-width:2.5; stroke-linecap:round;}
+.draht{stroke:var(--gedaempft); stroke-width:2.5; fill:none;}
+.strahl{opacity:0; transition:opacity .25s;}
+.leuchtet .strahl{opacity:1;}
+.birne{fill:#eef1f3; stroke:var(--gedaempft); stroke-width:2.5; transition:fill .25s;}
+.leuchtet .birne{fill:var(--lampe);}
+.faden{fill:none; stroke:var(--gedaempft); stroke-width:1.5;}
+.sockel{fill:#aab4bc; stroke:var(--gedaempft); stroke-width:1.5;}
+.klemme{fill:#8d9aa4;}
+
+/* Probekoerper wird sichtbar in den Aufbau eingesetzt */
+.probeblock{opacity:0; transform:translateY(-14px); transition:opacity .3s, transform .35s ease-in;}
+.drin .probeblock{opacity:1; transform:translateY(0);}
+
+/* Hammer: Metallkopf unten am braunen Griff, schlaegt von oben herab.
+   Drehpunkt rechts am Griffende; negative Drehung senkt den Kopf. */
+.hammer{transform-origin:102px 24px; transform:rotate(12deg); transition:transform .28s ease-in;}
+.schlaegt .hammer{transform:rotate(-20deg);}
+.teilstueck{transform-box:fill-box; transform-origin:center; transition:transform .35s ease-out;}
+.zerbrochen .teil-l{transform:translate(-9px,3px) rotate(-13deg);}
+.zerbrochen .teil-r{transform:translate(9px,3px) rotate(13deg);}
+.probekoerper{transition:transform .4s ease-out; transform-origin:64px 76px;}
+.verformt .probekoerper{transform:scaleY(.6) scaleX(1.28);}
+
+.flamme{opacity:0; transition:opacity .3s;}
+.heizt .flamme{opacity:1;}
+.festkoerper{transition:opacity .35s;}
+.geschmolzen .festkoerper{opacity:0;}
+.fluessig{opacity:0; transition:opacity .35s;}
+.geschmolzen .fluessig{opacity:1;}
+
+/* --- Messprotokoll -------------------------------------------- */
+.protokoll{width:100%; border-collapse:collapse; table-layout:fixed;}
+.protokoll th,.protokoll td{
+  border:1px solid var(--linie); padding:5px 6px; vertical-align:middle;
+}
+.protokoll thead th{
+  font-size:10.5px; font-weight:700; letter-spacing:.04em; line-height:1.2;
+  color:var(--gedaempft); background:var(--grund); text-align:center; height:46px;
+}
+.protokoll thead th:first-child{text-align:left;}
+.protokoll tbody th{
+  font-size:11.5px; font-weight:600; text-align:left; line-height:1.2; width:108px;
+}
+.protokoll tbody th small{display:block; font-weight:400; color:var(--gedaempft); font-size:10.5px;}
+.protokoll td{height:44px; text-align:center;}
+.zelle{display:flex; flex-direction:column; align-items:center; gap:2px; font-size:10.5px; color:var(--gedaempft);}
+.zelle svg{display:block;}
+.leer{color:var(--linie); font-size:16px;}
+.protokoll .warnspalte{background:var(--warn-feld); outline:2px solid var(--warn); outline-offset:-2px;}
+.protokoll tr.betont th, .protokoll tr.betont td{background:var(--kupfer-hell);}
+
+.zaehler{
+  margin-top:10px; display:flex; align-items:center; gap:10px;
+  font-size:12.5px; color:var(--gedaempft);
+}
+.balken{flex:1; height:6px; border-radius:3px; background:var(--grund); overflow:hidden;}
+.balken i{display:block; height:100%; background:var(--kupfer); width:0; transition:width .3s;}
+
+/* --- Fortschritts- und Phasenknoepfe -------------------------- */
+.weiter{
+  margin-top:10px; min-height:48px; width:100%; border:none; border-radius:5px;
+  background:var(--kupfer); color:#fff; font-size:15px; font-weight:600;
+}
+.weiter:disabled{background:var(--linie); color:#fff;}
+.weiter.zweitrangig{background:transparent; color:var(--kupfer); border:1.5px solid var(--kupfer);}
+
+/* --- Phase B: Gruppenfelder ----------------------------------- */
+.arbeitsspalte{display:flex; flex-direction:column; gap:12px; min-height:0;}
+.gruppenreihe{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; flex:1; min-height:0;}
+.gruppe{
+  border:1.5px dashed var(--linie); border-radius:5px; background:var(--feld);
+  padding:10px; display:flex; flex-direction:column; gap:7px; min-height:44px; text-align:left;
+}
+.gruppe:active{background:var(--grund);}
+.gruppe.zielbereit{border-style:solid; border-color:var(--kupfer);}
+.gruppe .marke{
+  font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--gedaempft); font-weight:700;
+}
+.gruppe .platzhalter{font-size:12px; color:var(--gedaempft); margin:auto 0;}
+.karte{
+  border:1.5px solid var(--linie); border-radius:4px; padding:6px 8px;
+  font-size:12.5px; font-weight:600; background:var(--feld); min-height:38px;
+  display:flex; align-items:center; text-align:left; line-height:1.2;
+}
+.karte.gewaehlt{border-color:var(--kupfer); background:var(--kupfer-hell);}
+
+.widerspruch{
+  min-height:40px; padding:8px 12px; border-radius:5px; font-size:13px;
+  background:var(--warn-feld); border-left:4px solid var(--warn);
+  display:flex; align-items:center; opacity:0; transition:opacity .3s;
+}
+.widerspruch.sichtbar{opacity:1;}
+
+/* --- Phase C: Modellebene ------------------------------------- */
+.modellreihe{display:grid; gap:12px; min-height:0;}
+.modell{
+  background:var(--feld); border-radius:6px; box-shadow:var(--tiefe);
+  padding:14px; display:flex; flex-direction:column; min-height:0;
+}
+.modell .marke{
+  font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--gedaempft); font-weight:700;
+}
+.modell h3{margin:2px 0 2px; font-size:17px; font-weight:600;}
+.modell .stoffliste{font-size:12px; color:var(--gedaempft); margin-bottom:8px;}
+.modell .bild{
+  flex:1; min-height:0; display:flex; align-items:center; justify-content:center;
+  background:var(--grund); border-radius:4px; padding:6px;
+}
+.modell .bild svg{max-height:100%; width:auto;}
+.modell p{margin:8px 0 0; font-size:12.5px; line-height:1.4;}
+.modell .fachbegriff{
+  margin-top:8px; font-size:12px; font-weight:700; color:var(--kupfer);
+  letter-spacing:.02em;
+}
+.umschalter{display:flex; gap:6px; margin-top:8px;}
+.umschalter button{
+  flex:1; min-height:40px; border:1.5px solid var(--linie); background:var(--feld);
+  border-radius:4px; font-size:12.5px;
+}
+.umschalter button.an{border-color:var(--kupfer); background:var(--kupfer-hell); color:var(--kupfer); font-weight:600;}
+.modell.gemischt .bild{background:var(--warn-feld);}
+.fussleiste{
+  display:flex; align-items:center; gap:16px;
+  background:var(--feld); border-radius:6px; box-shadow:var(--tiefe); padding:10px 14px;
+}
+.fussleiste .rest{flex:1; font-size:12.5px; color:var(--gedaempft);}
+.fussleiste .weiter{margin-top:0; width:auto; padding:0 20px;}
+
+/* Teilchenmodell-Grafik */
+.rumpf{fill:#c9d1d7; stroke:var(--gedaempft); stroke-width:1.5;}
+.elektron{fill:var(--kupfer);}
+.eminus{font-size:10px; font-weight:700; fill:#fff; text-anchor:middle; dominant-baseline:central;}
+.ion-plus{fill:#e6d2c2; stroke:var(--kupfer); stroke-width:1.5;}
+.ion-minus{fill:#cfd8de; stroke:var(--gedaempft); stroke-width:1.5;}
+.ladung{font-size:11px; font-weight:700; fill:var(--tinte); text-anchor:middle; dominant-baseline:central;}
+.molekuel{fill:#dfe4e7; stroke:var(--gedaempft); stroke-width:1.5;}
+.bindung{stroke:var(--gedaempft); stroke-width:2.5;}
+
+/* Elektronen wandern in den Luecken zwischen den Atomruempfen */
+.e-band{
+  animation-name:ewandern; animation-timing-function:ease-in-out;
+  animation-iteration-count:infinite; animation-direction:alternate;
+}
+@keyframes ewandern{
+  from{transform:translateX(0);}
+  to{transform:translateX(44px);}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms !important; animation-duration:.01ms !important; animation-iteration-count:1 !important;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Eigenschaften und Bindungstyp</h1>
+  <div class="phasenband">
+    <span class="phasenchip" data-chip="A">Messen</span>
+    <span class="phasenchip" data-chip="B">Ordnen</span>
+    <span class="phasenchip" data-chip="C">Modelle</span>
+    <button class="reset" id="resetKnopf">Neu beginnen</button>
+  </div>
+</header>
+
+<!-- ================= PHASE A: MESSEN ================= -->
+<main id="phaseA">
+  <section class="panel">
+    <h2>Stoffregal</h2>
+    <div class="regal" id="regalA"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Arbeitsplatz</h2>
+    <div class="stationen" id="stationen"></div>
+    <div class="hinweiszeile" id="hinweisA">Wähle eine Probe und danach eine Prüfstation.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Messprotokoll</h2>
+    <div id="protokollA"></div>
+    <div class="zaehler">
+      <span id="zaehlerText">0 von 18 Messungen</span>
+      <span class="balken"><i id="zaehlerBalken"></i></span>
+    </div>
+    <button class="weiter" id="zuOrdnen" disabled>Weiter zum Ordnen</button>
+  </section>
+</main>
+
+<!-- ================= PHASE B: GRUPPIEREN ================= -->
+<main id="phaseB">
+  <section class="panel">
+    <h2>Stoffregal</h2>
+    <div class="regal" id="regalB"></div>
+    <button class="regalaktion" id="ausGruppe" hidden>Aus Gruppe nehmen</button>
+  </section>
+
+  <section class="arbeitsspalte">
+    <section class="panel">
+      <h2>Messprotokoll</h2>
+      <div id="protokollB"></div>
+    </section>
+
+    <section class="panel" style="flex:1;">
+      <h2>Ordnen nach Ähnlichkeit</h2>
+      <div class="gruppenreihe" id="gruppenreihe"></div>
+      <div class="widerspruch" id="widerspruch"></div>
+      <button class="weiter" id="zuModellen">Modelle anzeigen</button>
+    </section>
+  </section>
+</main>
+
+<!-- ================= PHASE C: MODELLEBENE ================= -->
+<main id="phaseC">
+  <div class="modellreihe" id="modellreihe"></div>
+  <div class="fussleiste">
+    <span class="rest" id="restHinweis"></span>
+    <button class="weiter zweitrangig" id="zurueckB">Zurück zum Ordnen</button>
+  </div>
+</main>
+
+<script>
+/* ============================================================
+   Datenmodell
+   ============================================================ */
+
+/* Reihenfolge im Regal bewusst gemischt, nicht nach Bindungstyp sortiert. */
+const STOFFE = [
+  {id:'nacl',  alltag:'Speisesalz',                stoff:'Natriumchlorid', kurz:'Speisesalz'},
+  {id:'cu',    alltag:'Kupferkabel',               stoff:'Kupfer',         kurz:'Kupferkabel'},
+  {id:'zitro', alltag:'Entkalker',                 stoff:'Zitronensäure',  kurz:'Entkalker'},
+  {id:'cacl2', alltag:'Streusalz',                 stoff:'Calciumchlorid', kurz:'Streusalz'},
+  {id:'al',    alltag:'Alufolie',                  stoff:'Aluminium',      kurz:'Alufolie'},
+  {id:'s',     alltag:'Schwefel aus dem Gartenbau',stoff:'Schwefel',       kurz:'Schwefel'}
+];
+
+const STATIONEN = [
+  {id:'fest',    nr:'Station 1', titel:'Leitfähigkeit im festen Zustand', spalte:'Leitfähigkeit<br>fest',     fall:'bei der Leitfähigkeit im festen Zustand'},
+  {id:'schmelze',nr:'Station 2', titel:'Leitfähigkeit der Schmelze',      spalte:'Leitfähigkeit<br>Schmelze', fall:'bei der Leitfähigkeit der Schmelze'},
+  {id:'schlag',  nr:'Station 3', titel:'Schlagprobe',                     spalte:'Schlagprobe',               fall:'bei der Schlagprobe'}
+];
+
+/* Messbefunde. 'ja'/'nein' bei den Leitfaehigkeitsstationen,
+   'verformt'/'zerbricht' bei der Schlagprobe. */
+const BEFUNDE = {
+  cu:    {fest:'ja',   schmelze:'ja',   schlag:'verformt'},
+  al:    {fest:'ja',   schmelze:'ja',   schlag:'verformt'},
+  nacl:  {fest:'nein', schmelze:'ja',   schlag:'zerbricht'},
+  cacl2: {fest:'nein', schmelze:'ja',   schlag:'zerbricht'},
+  s:     {fest:'nein', schmelze:'nein', schlag:'zerbricht'},
+  zitro: {fest:'nein', schmelze:'nein', schlag:'zerbricht'}
+};
+
+const BESCHRIFTUNG = {
+  ja:'leuchtet', nein:'bleibt dunkel',
+  verformt:'verformt sich', zerbricht:'zerbricht'
+};
+
+/* Zuordnung Messprofil -> Teilchenmodell. Schluessel: fest|schmelze|schlag.
+   Jedes Modell erklaert beide Befunde: Leitfaehigkeit UND Verformbarkeit. */
+const MODELLE = {
+  'ja|ja|verformt': {
+    id:'metall', name:'Metallgitter', fachbegriff:'Metallbindung',
+    satz1:'Positiv geladene Metallrümpfe sitzen in einem regelmäßigen Gitter, zwischen ihnen bewegen sich Elektronen frei.',
+    satz2:'Leitfähigkeit: Die beweglichen Elektronen transportieren die Ladung — deshalb leitet das Metall in jedem Zustand.',
+    satz3:'Schlagprobe: Die Rümpfe können aneinander vorbeigleiten, die Elektronen halten sie weiter zusammen — das Metall verformt sich, statt zu zerbrechen.'
+  },
+  'nein|ja|zerbricht': {
+    id:'ionen', name:'Ionengitter', fachbegriff:'Ionenbindung',
+    satz1:'Positiv und negativ geladene Ionen sitzen abwechselnd in einem festen Gitter und können sich dort nicht bewegen.',
+    satz2:'Leitfähigkeit: Erst in der Schmelze löst sich das Gitter auf, die Ionen werden beweglich und transportieren die Ladung — deshalb leitet der Stoff nur geschmolzen.',
+    satz3:'Schlagprobe: Beim Schlag verschieben sich die Ionenreihen, gleich geladene Ionen treffen aufeinander und stoßen sich ab — das Gitter zerbricht.'
+  },
+  'nein|nein|zerbricht': {
+    id:'molekuel', name:'Molekülverband', fachbegriff:'Elektronenpaarbindung',
+    satz1:'Der Stoff besteht aus einzelnen Moleküleinheiten, die nach außen keine Ladung tragen.',
+    satz2:'Leitfähigkeit: Es gibt keine frei beweglichen Ladungsträger — der Stoff leitet weder fest noch geschmolzen.',
+    satz3:'Schlagprobe: Zwischen den Molekülen wirken nur schwache Kräfte — beim Schlag bricht der Stoff leicht auseinander.'
+  }
+};
+
+/* ============================================================
+   Zustand
+   ============================================================ */
+const zustand = {
+  phase:'A',
+  gewaehlt:null,                    /* id der ausgewaehlten Probe */
+  messungen:{},                     /* 'stoffId|stationId' -> Befund */
+  gruppen:{1:[],2:[],3:[]},
+  laeuft:false,                     /* blockiert Eingaben waehrend der Animation */
+  generation:0,                     /* entwertet laufende Timeouts nach Reset */
+  resetTimer:{},                    /* wartende Buehnen-Ruecksetzung je Station */
+  letzterHinweis:0,                 /* Zeitstempel des letzten Widerspruchshinweises */
+  schmelzAnsicht:'fest'             /* Umschalter im Ionengitter-Bild */
+};
+
+const $ = id => document.getElementById(id);
+
+/* ============================================================
+   Kleine SVG-Bausteine
+   ============================================================ */
+
+/* Wiederverwendbare Gluehlampe: Glaskolben mit Gluehfaden und Schraubsockel.
+   cx/cy = Mittelpunkt des Kolbens, r = Kolbenradius. */
+function lampe(cx, cy, r){
+  const s = r/12;                          /* Skalierung relativ zur Standardlampe */
+  const sockelB = 12*s, sockelH = 8*s;
+  return `
+    <g class="strahl" stroke="#f0c419" stroke-width="2.5" stroke-linecap="round">
+      <line x1="${cx}" y1="${cy-r-9}" x2="${cx}" y2="${cy-r-3}"/>
+      <line x1="${cx-r-8}" y1="${cy-r+1}" x2="${cx-r-2}" y2="${cy-r+5}"/>
+      <line x1="${cx+r+8}" y1="${cy-r+1}" x2="${cx+r+2}" y2="${cy-r+5}"/>
+    </g>
+    <circle class="birne" cx="${cx}" cy="${cy}" r="${r}"/>
+    <path class="faden" d="M${cx-5*s} ${cy+4*s} L${cx-3*s} ${cy-3*s} L${cx} ${cy+3*s} L${cx+3*s} ${cy-3*s} L${cx+5*s} ${cy+4*s}"/>
+    <rect class="sockel" x="${cx-sockelB/2}" y="${cy+r-1}" width="${sockelB}" height="${sockelH}" rx="1.5"/>
+    <line x1="${cx-sockelB/2}" y1="${cy+r+sockelH/2-1}" x2="${cx+sockelB/2}" y2="${cy+r+sockelH/2-1}" stroke="#5c6b7a" stroke-width="1"/>`;
+}
+
+/* Station 1: geschlossener Stromkreis mit Batterie, Lampe und einer Luecke,
+   in die der Probekoerper sichtbar eingesetzt wird. */
+function svgLampe(){
+  return `<svg viewBox="0 0 128 100" width="118" height="92" aria-hidden="true">
+    ${lampe(64, 22, 12)}
+    <path class="draht" d="M58 34 L30 34 L30 46 M30 58 L30 72 L46 72 M70 34 L98 34 L98 72 L82 72"/>
+    <line x1="22" y1="48" x2="38" y2="48" stroke="#5c6b7a" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="26" y1="55" x2="34" y2="55" stroke="#5c6b7a" stroke-width="4" stroke-linecap="round"/>
+    <rect class="klemme" x="46" y="63" width="4" height="16"/>
+    <rect class="klemme" x="78" y="63" width="4" height="16"/>
+    <g class="probeblock">
+      <rect x="50" y="64" width="28" height="15" rx="2" fill="#c9d1d7" stroke="#5c6b7a" stroke-width="1.5"/>
+    </g>
+    <line x1="36" y1="82" x2="92" y2="82" stroke="#5c6b7a" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>`;
+}
+
+/* Station 2: Tiegel mit Brenner, zwei Elektroden tauchen in die Probe,
+   die Lampe sitzt oben im Stromkreis. */
+function svgSchmelze(){
+  return `<svg viewBox="0 0 128 100" width="118" height="92" aria-hidden="true">
+    ${lampe(64, 18, 10)}
+    <path class="draht" d="M59 28 L46 28 L46 64 M69 28 L82 28 L82 64"/>
+    <path class="glas" d="M38 44 L38 64 Q38 74 48 74 L80 74 Q90 74 90 64 L90 44"/>
+    <rect class="festkoerper" x="52" y="60" width="24" height="12" rx="2" fill="#c9d1d7" stroke="#5c6b7a" stroke-width="1.5"/>
+    <path class="fluessig" d="M40 58 Q50 53 60 58 T80 58 L88 58 L88 64 Q88 72 80 72 L48 72 Q40 72 40 64 Z" fill="#b6c2ca"/>
+    <g class="flamme">
+      <path d="M64 92 Q56 85 64 75 Q72 85 64 92 Z" fill="#f0a219"/>
+      <path d="M64 90 Q60 85 64 80 Q68 85 64 90 Z" fill="#f0c419"/>
+    </g>
+    <line x1="56" y1="94" x2="72" y2="94" stroke="#5c6b7a" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>`;
+}
+
+/* Station 3: Hammer mit braunem Griff und Metallkopf unten;
+   der Kopf schlaegt von oben auf den Probekoerper. */
+function svgSchlag(){
+  return `<svg viewBox="0 0 128 100" width="118" height="92" aria-hidden="true">
+    <g class="hammer">
+      <rect x="60" y="21" width="46" height="7" rx="3" fill="#a9683c"/>
+      <rect x="44" y="12" width="17" height="27" rx="2" fill="#8d9aa4" stroke="#5c6b7a" stroke-width="1.5"/>
+    </g>
+    <g class="probeblock probekoerper">
+      <rect class="teilstueck teil-l" x="48" y="60" width="16" height="16" rx="2" fill="#c9d1d7" stroke="#5c6b7a" stroke-width="1.5"/>
+      <rect class="teilstueck teil-r" x="64" y="60" width="16" height="16" rx="2" fill="#c9d1d7" stroke="#5c6b7a" stroke-width="1.5"/>
+    </g>
+    <line x1="28" y1="78" x2="100" y2="78" stroke="#5c6b7a" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>`;
+}
+
+/* Kleine Symbole fuer die Protokollzellen */
+function symbol(befund){
+  if(befund==='ja') return `<svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="7" fill="#f0c419" stroke="#9c5a2d" stroke-width="1.5"/></svg>`;
+  if(befund==='nein') return `<svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="7" fill="none" stroke="#5c6b7a" stroke-width="1.5"/></svg>`;
+  if(befund==='verformt') return `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 15 Q12 5 20 15" fill="none" stroke="#5c6b7a" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+  return `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M10 5 L5 19" stroke="#5c6b7a" stroke-width="2.5" stroke-linecap="round"/><path d="M15 5 L19 19" stroke="#5c6b7a" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+}
+
+/* Farbiges, aufploppendes Ergebnis fuer die Stationsausgabe */
+function badge(befund, text){
+  const klasse = {ja:'b-ja', nein:'b-nein', verformt:'b-verformt', zerbricht:'b-zerbricht'}[befund];
+  return `<span class="badge ${klasse}">${text || BESCHRIFTUNG[befund]}</span>`;
+}
+
+/* ============================================================
+   Teilchenbilder Phase C
+   ============================================================ */
+function bildMetall(){
+  let g='';
+  for(let z=0; z<3; z++){
+    for(let s=0; s<4; s++){
+      const x=30+s*44, y=28+z*42;
+      g+=`<circle class="rumpf" cx="${x}" cy="${y}" r="15"/><text class="ladung" x="${x}" y="${y}">+</text>`;
+    }
+  }
+  /* Elektronen als Minus-Teilchen; sie wandern langsam in den Luecken
+     zwischen den Ruempfen hin und her (CSS-Animation .e-band). */
+  const bahnen=[
+    [52,49,'4.4s','-1.2s','alternate'],
+    [96,49,'5.2s','-2.6s','alternate-reverse'],
+    [136,49,'3.8s','-0.5s','alternate'],
+    [52,91,'4.9s','-3.1s','alternate-reverse'],
+    [96,91,'3.5s','-1.8s','alternate'],
+    [136,91,'5.6s','-2.4s','alternate-reverse']
+  ];
+  bahnen.forEach(([x,y,dauer,vers,richt])=>{
+    g+=`<g class="e-band" style="animation-duration:${dauer};animation-delay:${vers};animation-direction:${richt}">
+          <circle class="elektron" cx="${x}" cy="${y}" r="5.5"/>
+          <text class="eminus" x="${x}" y="${y}">−</text>
+        </g>`;
+  });
+  return `<svg viewBox="0 0 200 140" width="200" height="140">${g}</svg>`;
+}
+
+function bildIonenFest(){
+  let g='';
+  for(let z=0; z<3; z++){
+    for(let s=0; s<4; s++){
+      const x=32+s*45, y=28+z*42;
+      const plus=(z+s)%2===0;
+      g+=`<circle class="${plus?'ion-plus':'ion-minus'}" cx="${x}" cy="${y}" r="16"/>`
+        +`<text class="ladung" x="${x}" y="${y}">${plus?'+':'–'}</text>`;
+    }
+  }
+  return `<svg viewBox="0 0 200 140" width="200" height="140">${g}</svg>`;
+}
+
+function bildIonenSchmelze(){
+  /* Gleiche Teilchen, aber ungeordnet und ohne Gitterplaetze */
+  const p=[[36,34,1],[86,26,0],[134,40,1],[172,30,0],[52,74,0],[104,66,1],[150,80,0],
+           [30,110,1],[78,114,0],[124,106,1],[168,116,0],[60,44,1]];
+  let g='';
+  p.forEach(([x,y,plus])=>{
+    g+=`<circle class="${plus?'ion-plus':'ion-minus'}" cx="${x}" cy="${y}" r="15"/>`
+      +`<text class="ladung" x="${x}" y="${y}">${plus?'+':'–'}</text>`;
+  });
+  /* Bewegungspfeile deuten die Beweglichkeit an */
+  g+=`<g stroke="#9c5a2d" stroke-width="2" stroke-linecap="round" fill="none">
+        <path d="M60 96 L74 90"/><path d="M70 88 L74 90 L71 94"/>
+        <path d="M140 58 L154 64"/><path d="M150 61 L154 64 L150 67"/>
+      </g>`;
+  return `<svg viewBox="0 0 200 140" width="200" height="140">${g}</svg>`;
+}
+
+function bildMolekuel(){
+  /* Getrennte Moleküleinheiten ohne Ladung, deutlicher Abstand dazwischen */
+  const einheiten=[[42,38],[136,34],[54,102],[148,104],[96,70]];
+  let g='';
+  einheiten.forEach(([x,y])=>{
+    g+=`<line class="bindung" x1="${x-13}" y1="${y}" x2="${x+13}" y2="${y}"/>`
+      +`<circle class="molekuel" cx="${x-14}" cy="${y}" r="12"/>`
+      +`<circle class="molekuel" cx="${x+14}" cy="${y}" r="12"/>`;
+  });
+  return `<svg viewBox="0 0 200 140" width="200" height="140">${g}</svg>`;
+}
+
+const BILDER = {metall:bildMetall, molekuel:bildMolekuel};
+
+/* ============================================================
+   Phase A: Regal, Stationen, Protokoll
+   ============================================================ */
+
+function zeichneRegal(behaelter, mitGruppenmarke){
+  behaelter.innerHTML = STOFFE.map(st=>{
+    const gr = gruppeVon(st.id);
+    const marke = (mitGruppenmarke && gr) ? `<span class="gruppenmarke">in Gruppe ${gr}</span>` : '';
+    const klassen = ['probe'];
+    if(zustand.gewaehlt===st.id) klassen.push('gewaehlt');
+    if(mitGruppenmarke && gr) klassen.push('verteilt');
+    return `<button class="${klassen.join(' ')}" data-stoff="${st.id}">
+      <span class="alltag">${st.alltag}</span>
+      <span class="stoff">${st.stoff}</span>${marke}
+    </button>`;
+  }).join('');
+}
+
+function zeichneStationen(){
+  $('stationen').innerHTML = STATIONEN.map(s=>`
+    <button class="station" data-station="${s.id}">
+      <span class="nr">${s.nr}</span>
+      <span class="titel">${s.titel}</span>
+      <span class="buehne" data-buehne="${s.id}">${
+        s.id==='fest' ? svgLampe() : s.id==='schmelze' ? svgSchmelze() : svgSchlag()
+      }</span>
+      <span class="ausgabe" data-ausgabe="${s.id}"></span>
+    </button>`).join('');
+}
+
+function zeichneProtokoll(ziel, warnspalten){
+  warnspalten = warnspalten || [];
+  const kopf = STATIONEN.map((s,i)=>
+    `<th class="${warnspalten.includes(i)?'warnspalte':''}">${s.spalte}</th>`).join('');
+
+  const zeilen = STOFFE.map(st=>{
+    const betont = zustand.gewaehlt===st.id ? 'betont' : '';
+    const zellen = STATIONEN.map((s,i)=>{
+      const wert = zustand.messungen[st.id+'|'+s.id];
+      const inhalt = wert
+        ? `<span class="zelle">${symbol(wert)}${BESCHRIFTUNG[wert]}</span>`
+        : `<span class="leer">·</span>`;
+      return `<td class="${warnspalten.includes(i)?'warnspalte':''}">${inhalt}</td>`;
+    }).join('');
+    return `<tr class="${betont}"><th>${st.alltag}<small>${st.stoff}</small></th>${zellen}</tr>`;
+  }).join('');
+
+  ziel.innerHTML = `<table class="protokoll">
+    <thead><tr><th>Probe</th>${kopf}</tr></thead>
+    <tbody>${zeilen}</tbody></table>`;
+}
+
+function anzahlMessungen(){ return Object.keys(zustand.messungen).length; }
+
+function aktualisiereZaehler(){
+  const n = anzahlMessungen();
+  $('zaehlerText').textContent = `${n} von 18 Messungen`;
+  $('zaehlerBalken').style.width = (n/18*100)+'%';
+  $('zuOrdnen').disabled = n<18;
+}
+
+/* Messvorgang mit Animation. Ablauf je Station:
+   Probe wird sichtbar eingesetzt -> Vorgang laeuft -> Ergebnis-Badge.
+   Metalle an Station 2 ohne Schmelzanimation (Ergebnis direkt). */
+function messen(stationId){
+  if(zustand.laeuft) return;
+  if(!zustand.gewaehlt){
+    $('hinweisA').textContent = 'Wähle zuerst eine Probe aus dem Stoffregal.';
+    return;
+  }
+  const stoff  = STOFFE.find(s=>s.id===zustand.gewaehlt);
+  const befund = BEFUNDE[stoff.id][stationId];
+  const karte  = document.querySelector(`[data-station="${stationId}"]`);
+  const buehne = document.querySelector(`[data-buehne="${stationId}"]`);
+  const ausgabe= document.querySelector(`[data-ausgabe="${stationId}"]`);
+  const metall = (stoff.id==='cu' || stoff.id==='al');
+
+  /* Sonderfall: Metalle an Station 2 — Ergebnis direkt, ohne Schmelze */
+  if(stationId==='schmelze' && metall){
+    ausgabe.innerHTML = badge('ja', 'leitet — Metalle leiten in jedem Zustand');
+    zustand.messungen[stoff.id+'|'+stationId] = befund;
+    nachMessung(stoff);
+    return;
+  }
+
+  clearTimeout(zustand.resetTimer[stationId]);
+  const gen = zustand.generation;
+  /* Timeout-Schritt, der nach einem Reset wirkungslos verfaellt */
+  const schritt = (ms,fn)=>setTimeout(()=>{ if(zustand.generation===gen) fn(); }, ms);
+
+  zustand.laeuft = true;
+  karte.classList.add('laeuft');
+  ausgabe.textContent = stoff.alltag + ' wird geprüft …';
+  buehne.className = 'buehne';
+
+  if(stationId==='fest'){
+    schritt(80,  ()=>buehne.classList.add('drin'));
+    schritt(850, ()=>{ if(befund==='ja') buehne.classList.add('leuchtet'); });
+  } else if(stationId==='schmelze'){
+    schritt(80,  ()=>buehne.classList.add('heizt'));
+    schritt(650, ()=>buehne.classList.add('geschmolzen'));
+    schritt(1100,()=>{ if(befund==='ja') buehne.classList.add('leuchtet'); });
+  } else {
+    schritt(80,  ()=>buehne.classList.add('drin'));
+    schritt(450, ()=>buehne.classList.add('schlaegt'));
+    schritt(750, ()=>buehne.classList.add(befund==='zerbricht' ? 'zerbrochen' : 'verformt'));
+  }
+
+  schritt(1500, ()=>{
+    ausgabe.innerHTML = badge(befund);
+    zustand.messungen[stoff.id+'|'+stationId] = befund;
+    karte.classList.remove('laeuft');
+    zustand.laeuft = false;
+    nachMessung(stoff);
+    /* Instrument nach kurzer Pause in den Ausgangszustand zuruecksetzen */
+    zustand.resetTimer[stationId] = setTimeout(()=>{
+      if(zustand.generation===gen) buehne.className='buehne';
+    }, 1400);
+  });
+}
+
+function nachMessung(stoff){
+  zeichneProtokoll($('protokollA'));
+  aktualisiereZaehler();
+  const offen = STATIONEN.filter(s=>!zustand.messungen[stoff.id+'|'+s.id]).length;
+  $('hinweisA').textContent = offen
+    ? `${stoff.alltag}: noch ${offen} ${offen===1?'Messung':'Messungen'} offen.`
+    : `${stoff.alltag} ist vollständig geprüft. Wähle die nächste Probe.`;
+}
+
+/* ============================================================
+   Phase B: Gruppieren
+   ============================================================ */
+
+function gruppeVon(stoffId){
+  for(const nr of [1,2,3]) if(zustand.gruppen[nr].includes(stoffId)) return Number(nr);
+  return null;
+}
+
+function zeichneGruppen(){
+  $('gruppenreihe').innerHTML = [1,2,3].map(nr=>{
+    const inhalt = zustand.gruppen[nr].length
+      ? zustand.gruppen[nr].map(id=>{
+          const st = STOFFE.find(s=>s.id===id);
+          return `<span class="karte ${zustand.gewaehlt===id?'gewaehlt':''}">${st.alltag}</span>`;
+        }).join('')
+      : `<span class="platzhalter">Probe auswählen, dann hierher tippen</span>`;
+    const bereit = zustand.gewaehlt && gruppeVon(zustand.gewaehlt)!==nr ? 'zielbereit' : '';
+    return `<button class="gruppe ${bereit}" data-gruppe="${nr}">
+      <span class="marke">Gruppe ${nr}</span>${inhalt}
+    </button>`;
+  }).join('');
+  $('ausGruppe').hidden = !(zustand.gewaehlt && gruppeVon(zustand.gewaehlt));
+}
+
+function zuordnen(nr){
+  if(!zustand.gewaehlt) return;
+  const id = zustand.gewaehlt;
+  [1,2,3].forEach(g=>{ zustand.gruppen[g] = zustand.gruppen[g].filter(x=>x!==id); });
+  zustand.gruppen[nr].push(id);
+  zustand.gewaehlt = null;
+  zeichneRegal($('regalB'), true);
+  zeichneGruppen();
+  pruefeWiderspruch();
+}
+
+/* Widerspruchspruefung: innerhalb einer Gruppe unterschiedliche Werte in einer
+   Spalte. Die Spaltenmarkierung ist immer aktuell; der Hinweissatz erscheint
+   hoechstens alle 5 Sekunden neu. Blockiert nichts. */
+function pruefeWiderspruch(){
+  const treffer = [];
+  [1,2,3].forEach(nr=>{
+    const mitglieder = zustand.gruppen[nr];
+    if(mitglieder.length < 2) return;
+    STATIONEN.forEach((s,i)=>{
+      const werte = new Set(mitglieder.map(id=>BEFUNDE[id][s.id]));
+      if(werte.size > 1) treffer.push({gruppe:nr, spalte:i, fall:s.fall});
+    });
+  });
+
+  const feld = $('widerspruch');
+  if(!treffer.length){
+    feld.classList.remove('sichtbar');
+    zeichneProtokoll($('protokollB'));
+    return;
+  }
+
+  zeichneProtokoll($('protokollB'), treffer.map(x=>x.spalte));
+
+  const jetzt = Date.now();
+  if(jetzt - zustand.letzterHinweis < 5000) return;
+  zustand.letzterHinweis = jetzt;
+
+  const t = treffer[0];
+  feld.textContent = `In Gruppe ${t.gruppe} unterscheiden sich die Stoffe ${t.fall}. Passt das zusammen?`;
+  feld.classList.add('sichtbar');
+}
+
+/* ============================================================
+   Phase C: Modellebene
+   ============================================================ */
+
+function profilVon(stoffId){
+  const b = BEFUNDE[stoffId];
+  return `${b.fest}|${b.schmelze}|${b.schlag}`;
+}
+
+function zeichneModelle(){
+  const belegte = [1,2,3].filter(nr=>zustand.gruppen[nr].length>0);
+  $('modellreihe').style.gridTemplateColumns = `repeat(${Math.max(belegte.length,1)},1fr)`;
+
+  if(!belegte.length){
+    $('modellreihe').innerHTML = `<section class="modell">
+      <span class="marke">Noch nichts geordnet</span>
+      <h3>Keine Gruppe belegt</h3>
+      <p>Ordne im Schritt „Ordnen“ mindestens eine Probe einer Gruppe zu, dann erscheint hier das passende Teilchenmodell.</p>
+    </section>`;
+  } else {
+    $('modellreihe').innerHTML = belegte.map(nr=>{
+      const mitglieder = zustand.gruppen[nr];
+      const profile = new Set(mitglieder.map(profilVon));
+      const namen = mitglieder.map(id=>STOFFE.find(s=>s.id===id).alltag).join(', ');
+
+      /* Gemischte Gruppe: kein Modell, sondern Rueckverweis */
+      if(profile.size > 1){
+        return `<section class="modell gemischt">
+          <span class="marke">Gruppe ${nr}</span>
+          <h3>Kein einheitliches Profil</h3>
+          <div class="stoffliste">${namen}</div>
+          <div class="bild"><p style="margin:0; padding:0 10px; text-align:center;">
+            Diese Gruppe enthält Stoffe mit unterschiedlichem Profil — zurück zum Ordnen.
+          </p></div>
+        </section>`;
+      }
+
+      const modell = MODELLE[[...profile][0]];
+      const bild = modell.id==='ionen'
+        ? (zustand.schmelzAnsicht==='fest' ? bildIonenFest() : bildIonenSchmelze())
+        : BILDER[modell.id]();
+      const umschalter = modell.id==='ionen' ? `
+        <div class="umschalter">
+          <button data-ansicht="fest"       class="${zustand.schmelzAnsicht==='fest'?'an':''}">fester Zustand</button>
+          <button data-ansicht="geschmolzen" class="${zustand.schmelzAnsicht==='geschmolzen'?'an':''}">geschmolzen</button>
+        </div>` : '';
+
+      return `<section class="modell">
+        <span class="marke">Gruppe ${nr}</span>
+        <h3>${modell.name}</h3>
+        <div class="stoffliste">${namen}</div>
+        <div class="bild">${bild}</div>
+        ${umschalter}
+        <p>${modell.satz1}</p>
+        <p>${modell.satz2}</p>
+        <p>${modell.satz3}</p>
+        <div class="fachbegriff">Fachbegriff: ${modell.fachbegriff}</div>
+      </section>`;
+    }).join('');
+  }
+
+  /* Hinweis auf noch nicht eingeordnete Proben */
+  const rest = STOFFE.filter(s=>!gruppeVon(s.id)).map(s=>s.alltag);
+  $('restHinweis').textContent = rest.length
+    ? `Noch nicht eingeordnet: ${rest.join(', ')}. Ausgewertet werden nur die belegten Gruppen.`
+    : 'Alle sechs Proben sind eingeordnet.';
+}
+
+/* ============================================================
+   Phasenwechsel
+   ============================================================ */
+function setzePhase(p){
+  zustand.phase = p;
+  zustand.gewaehlt = null;
+  ['A','B','C'].forEach(x=>{
+    $('phase'+x).classList.toggle('sichtbar', x===p);
+    document.querySelector(`[data-chip="${x}"]`).classList.toggle('aktiv', x===p);
+  });
+  if(p==='A'){ zeichneRegal($('regalA'), false); zeichneProtokoll($('protokollA')); aktualisiereZaehler(); }
+  if(p==='B'){ zeichneRegal($('regalB'), true); zeichneProtokoll($('protokollB')); zeichneGruppen(); }
+  if(p==='C'){ zeichneModelle(); }
+}
+
+function zuruecksetzen(){
+  zustand.generation++;                       /* entwertet laufende Timeouts */
+  Object.values(zustand.resetTimer).forEach(clearTimeout);
+  zustand.resetTimer = {};
+  zustand.gewaehlt=null; zustand.messungen={};
+  zustand.gruppen={1:[],2:[],3:[]};
+  zustand.laeuft=false; zustand.letzterHinweis=0; zustand.schmelzAnsicht='fest';
+  $('widerspruch').classList.remove('sichtbar');
+  $('hinweisA').textContent = 'Wähle eine Probe und danach eine Prüfstation.';
+  zeichneStationen();                         /* Buehnen und Ausgaben frisch aufbauen */
+  setzePhase('A');
+}
+
+/* ============================================================
+   Ereignisse — nur Antippen, kein Drag & Drop
+   ============================================================ */
+document.addEventListener('click', e=>{
+  const probe = e.target.closest('[data-stoff]');
+  if(probe){
+    if(zustand.laeuft) return;
+    const id = probe.dataset.stoff;
+    zustand.gewaehlt = (zustand.gewaehlt===id) ? null : id;
+    if(zustand.phase==='A'){ zeichneRegal($('regalA'), false); zeichneProtokoll($('protokollA')); }
+    else { zeichneRegal($('regalB'), true); zeichneGruppen(); }
+    return;
+  }
+
+  const station = e.target.closest('[data-station]');
+  if(station){ messen(station.dataset.station); return; }
+
+  const gruppe = e.target.closest('[data-gruppe]');
+  if(gruppe){ zuordnen(Number(gruppe.dataset.gruppe)); return; }
+
+  const ansicht = e.target.closest('[data-ansicht]');
+  if(ansicht){ zustand.schmelzAnsicht = ansicht.dataset.ansicht; zeichneModelle(); return; }
+});
+
+$('zuOrdnen').addEventListener('click', ()=>setzePhase('B'));
+$('zuModellen').addEventListener('click', ()=>setzePhase('C'));
+$('zurueckB').addEventListener('click', ()=>setzePhase('B'));
+$('resetKnopf').addEventListener('click', zuruecksetzen);
+$('ausGruppe').addEventListener('click', ()=>{
+  if(!zustand.gewaehlt) return;
+  const id = zustand.gewaehlt;
+  [1,2,3].forEach(g=>{ zustand.gruppen[g] = zustand.gruppen[g].filter(x=>x!==id); });
+  zustand.gewaehlt = null;
+  zeichneRegal($('regalB'), true);
+  zeichneGruppen();
+  pruefeWiderspruch();
+});
+
+/* Start */
+zeichneStationen();
+setzePhase('A');
+</script>
+</body>
+</html>
