@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wechselschaltung – Physikraum</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d26;
+    --surface2: #242736;
+    --border: #2e3347;
+    --text: #e8eaf0;
+    --muted: #7b82a0;
+    --blue: #4a9eff;
+    --blue-dim: #1e3a5f;
+    --green: #2ecc71;
+    --green-glow: rgba(46,204,113,0.35);
+    --yellow: #f5c842;
+    --yellow-glow: rgba(245,200,66,0.5);
+    --red: #e74c3c;
+    --wire-off: #3a4060;
+    --wire-on: #f5c842;
+    --switch-a: #4a9eff;
+    --switch-b: #e056a0;
+    --radius: 12px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+    gap: 20px;
+  }
+
+  header {
+    text-align: center;
+    max-width: 600px;
+  }
+
+  .label-tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 1px solid var(--blue);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* CIRCUIT CANVAS */
+  .circuit-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 20px 20px;
+    width: 100%;
+    max-width: 620px;
+  }
+
+  svg#circuit {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* CONTROLS */
+  .controls {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    max-width: 620px;
+    justify-content: center;
+  }
+
+  .switch-card {
+    flex: 1;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.1s;
+    user-select: none;
+  }
+
+  .switch-card:hover { transform: translateY(-2px); }
+  .switch-card:active { transform: translateY(0px); }
+
+  .switch-card.sw-a { border-color: rgba(74,158,255,0.3); }
+  .switch-card.sw-a:hover { border-color: var(--switch-a); box-shadow: 0 0 16px rgba(74,158,255,0.2); }
+  .switch-card.sw-b { border-color: rgba(224,86,160,0.3); }
+  .switch-card.sw-b:hover { border-color: var(--switch-b); box-shadow: 0 0 16px rgba(224,86,160,0.2); }
+
+  .switch-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .switch-label.sw-a { color: var(--switch-a); }
+  .switch-label.sw-b { color: var(--switch-b); }
+
+  .switch-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    text-align: center;
+  }
+
+  .toggle-visual {
+    width: 64px;
+    height: 34px;
+    border-radius: 17px;
+    position: relative;
+    transition: background 0.25s;
+  }
+
+  .sw-a .toggle-visual { background: rgba(74,158,255,0.2); border: 2px solid var(--switch-a); }
+  .sw-b .toggle-visual { background: rgba(224,86,160,0.2); border: 2px solid var(--switch-b); }
+
+  .toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), background 0.25s;
+  }
+
+  .sw-a .toggle-knob { background: var(--switch-a); }
+  .sw-b .toggle-knob { background: var(--switch-b); }
+
+  .switch-card.active .toggle-knob { transform: translateX(30px); }
+
+  .switch-state {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .sw-a .switch-state { color: var(--switch-a); background: rgba(74,158,255,0.1); border: 1px solid rgba(74,158,255,0.3); }
+  .sw-b .switch-state { color: var(--switch-b); background: rgba(224,86,160,0.1); border: 1px solid rgba(224,86,160,0.3); }
+
+  /* LAMP STATUS */
+  .lamp-status {
+    width: 100%;
+    max-width: 620px;
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.3s;
+    border: 1px solid var(--border);
+  }
+
+  .lamp-status.on {
+    background: rgba(245,200,66,0.08);
+    border-color: rgba(245,200,66,0.4);
+    color: var(--yellow);
+    box-shadow: 0 0 20px rgba(245,200,66,0.1);
+  }
+
+  .lamp-status.off {
+    background: var(--surface);
+    color: var(--muted);
+  }
+
+  .lamp-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+
+  .lamp-status.on .lamp-dot {
+    background: var(--yellow);
+    box-shadow: 0 0 10px var(--yellow-glow);
+  }
+
+  .lamp-status.off .lamp-dot {
+    background: var(--border);
+  }
+
+  /* TABLE */
+  .table-wrap {
+    width: 100%;
+    max-width: 620px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .table-header {
+    padding: 14px 20px 10px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead th {
+    padding: 10px 16px;
+    text-align: center;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  thead th:first-child { text-align: left; padding-left: 20px; }
+
+  tbody tr { transition: background 0.15s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr.current-row { background: rgba(245,200,66,0.06); }
+  tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+
+  td {
+    padding: 11px 16px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  td:first-child { text-align: left; padding-left: 20px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+
+  .state-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .badge-up { color: var(--switch-a); background: rgba(74,158,255,0.12); border: 1px solid rgba(74,158,255,0.25); }
+  .badge-down { color: #a0a8c8; background: rgba(160,168,200,0.1); border: 1px solid rgba(160,168,200,0.2); }
+  .badge-pink-up { color: var(--switch-b); background: rgba(224,86,160,0.12); border: 1px solid rgba(224,86,160,0.25); }
+  .badge-pink-down { color: #a0a8c8; background: rgba(160,168,200,0.1); border: 1px solid rgba(160,168,200,0.2); }
+
+  .lamp-cell { font-size: 16px; }
+  .lamp-cell.filled { color: var(--yellow); }
+  .lamp-cell.empty { color: var(--border); }
+
+  .row-indicator {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--yellow);
+    margin-right: 8px;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  tbody tr.current-row .row-indicator { opacity: 1; }
+
+  /* Hint */
+  .hint {
+    width: 100%;
+    max-width: 620px;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .hint kbd {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="label-tag">Physik · Klasse 8</div>
+  <h1>Wechselschaltung</h1>
+  <p class="subtitle">Wie funktionieren die Schalter im Physikraum?</p>
+</header>
+
+<!-- CIRCUIT SVG -->
+<div class="circuit-wrap">
+  <svg id="circuit" viewBox="0 0 580 220" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="glow-yellow">
+        <feGaussianBlur stdDeviation="4" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="glow-lamp">
+        <feGaussianBlur stdDeviation="8" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <!-- Lamp glow circle (behind) -->
+      <radialGradient id="lampGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#f5c842" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#f5c842" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+
+    <!-- WIRES: drawn as paths, colored by JS -->
+    <!-- Top wire: Battery+ → SW1 input -->
+    <line id="w1" x1="60" y1="40" x2="180" y2="40" stroke-width="3" stroke-linecap="round"/>
+    <!-- SW1 output A → SW2 input A (top cross) -->
+    <line id="w2a" x1="250" y1="30" x2="330" y2="30" stroke-width="3" stroke-linecap="round"/>
+    <!-- SW1 output B → SW2 input B (bottom cross) -->
+    <line id="w2b" x1="250" y1="60" x2="330" y2="60" stroke-width="3" stroke-linecap="round"/>
+    <!-- SW2 output → Lamp -->
+    <line id="w3" x1="400" y1="40" x2="470" y2="40" stroke-width="3" stroke-linecap="round"/>
+    <!-- Bottom wire: Lamp → Battery- -->
+    <line id="w4" x1="510" y1="40" x2="540" y2="40" stroke-width="3" stroke-linecap="round"/>
+    <line id="w5" x1="540" y1="40" x2="540" y2="180" stroke-width="3" stroke-linecap="round"/>
+    <line id="w6" x1="20" y1="180" x2="540" y2="180" stroke-width="3" stroke-linecap="round"/>
+    <line id="w7" x1="20" y1="40" x2="20" y2="180" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- BATTERY -->
+    <!-- Body -->
+    <rect x="20" y="28" width="40" height="24" rx="4" fill="#1a1d26" stroke="#2e3347" stroke-width="1.5"/>
+    <!-- + terminal -->
+    <rect x="55" y="33" width="8" height="14" rx="2" fill="#4a9eff" opacity="0.9"/>
+    <!-- - terminal -->
+    <rect x="17" y="36" width="5" height="8" rx="1" fill="#7b82a0"/>
+    <text x="40" y="44" text-anchor="middle" font-family="DM Mono, monospace" font-size="9" fill="#7b82a0">4,5V</text>
+
+    <!-- LAMP GLOW (only visible when on) -->
+    <circle id="lampGlowCircle" cx="490" cy="40" r="35" fill="url(#lampGlow)" opacity="0"/>
+
+    <!-- LAMP symbol: circle with X -->
+    <circle id="lampCircle" cx="490" cy="40" r="20" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+    <line id="lampX1" x1="476" y1="26" x2="504" y2="54" stroke-width="2" stroke-linecap="round"/>
+    <line id="lampX2" x1="504" y1="26" x2="476" y2="54" stroke-width="2" stroke-linecap="round"/>
+    <!-- Lamp connections -->
+    <line id="lampL" x1="470" y1="40" x2="470" y2="40" stroke-width="3"/>
+    <line id="lampR" x1="510" y1="40" x2="510" y2="40" stroke-width="3"/>
+
+    <!-- SWITCH 1 -->
+    <!-- Input node -->
+    <circle cx="200" cy="40" r="4" fill="#4a9eff"/>
+    <!-- Output nodes A (top) and B (bottom) -->
+    <circle cx="240" cy="30" r="3" fill="#4a9eff" opacity="0.7"/>
+    <circle cx="240" cy="60" r="3" fill="#4a9eff" opacity="0.7"/>
+    <!-- Switch arm (moves between top and bottom) -->
+    <line id="sw1arm" x1="200" y1="40" x2="240" y2="30" stroke="#4a9eff" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Label -->
+    <rect x="185" y="72" width="70" height="20" rx="4" fill="rgba(74,158,255,0.1)" stroke="rgba(74,158,255,0.3)" stroke-width="1"/>
+    <text x="220" y="85" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="10" fill="#4a9eff" font-weight="600">Schalter Tür A</text>
+
+    <!-- SWITCH 2 -->
+    <!-- Input node from top wire (A) and bottom wire (B) -->
+    <circle cx="340" cy="30" r="3" fill="#e056a0" opacity="0.7"/>
+    <circle cx="340" cy="60" r="3" fill="#e056a0" opacity="0.7"/>
+    <!-- Output node -->
+    <circle cx="380" cy="40" r="4" fill="#e056a0"/>
+    <!-- Switch arm -->
+    <line id="sw2arm" x1="340" y1="30" x2="380" y2="40" stroke="#e056a0" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Label -->
+    <rect x="325" y="72" width="70" height="20" rx="4" fill="rgba(224,86,160,0.1)" stroke="rgba(224,86,160,0.3)" stroke-width="1"/>
+    <text x="360" y="85" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="10" fill="#e056a0" font-weight="600">Schalter Tür B</text>
+
+    <!-- Labels: Spannungsquelle, Lampe -->
+    <text x="40" y="16" text-anchor="middle" font-family="DM Mono, monospace" font-size="9" fill="#7b82a0">QUELLE</text>
+    <text x="490" y="10" text-anchor="middle" font-family="DM Mono, monospace" font-size="9" fill="#7b82a0">LAMPE</text>
+  </svg>
+</div>
+
+<!-- SWITCH BUTTONS -->
+<div class="controls">
+  <div class="switch-card sw-a" id="btnA" onclick="toggle('A')">
+    <span class="switch-label sw-a">Schalter A</span>
+    <span class="switch-name">Tür A</span>
+    <div class="toggle-visual">
+      <div class="toggle-knob"></div>
+    </div>
+    <span class="switch-state" id="stateA">Stellung: UNTEN</span>
+  </div>
+  <div class="switch-card sw-b" id="btnB" onclick="toggle('B')">
+    <span class="switch-label sw-b">Schalter B</span>
+    <span class="switch-name">Tür B</span>
+    <div class="toggle-visual">
+      <div class="toggle-knob"></div>
+    </div>
+    <span class="switch-state" id="stateB">Stellung: UNTEN</span>
+  </div>
+</div>
+
+<!-- LAMP STATUS -->
+<div class="lamp-status off" id="lampStatus">
+  <div class="lamp-dot"></div>
+  <span id="lampText">Lampe leuchtet nicht</span>
+</div>
+
+<!-- OBSERVATION TABLE -->
+<div class="table-wrap">
+  <div class="table-header">Beobachtungstabelle – alle Kombinationen</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Kombination</th>
+        <th>Schalter A</th>
+        <th>Schalter B</th>
+        <th>Lampe</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+      <!-- filled by JS -->
+    </tbody>
+  </table>
+</div>
+
+<p class="hint">Klicke auf die Schalter-Karten, um die Stellung zu ändern.<br>Die aktuelle Kombination wird in der Tabelle markiert.</p>
+
+<script>
+  // State: false = unten (output B), true = oben (output A)
+  const state = { A: false, B: false };
+
+  // Wire colors
+  const OFF = '#3a4060';
+  const ON  = '#f5c842';
+
+  // All combinations for table
+  const combos = [
+    { a: false, b: false },
+    { a: false, b: true  },
+    { a: true,  b: false },
+    { a: true,  b: true  },
+  ];
+
+  function isLampOn(a, b) {
+    // SW1: false=B(bottom), true=A(top)
+    // SW2: false=B(bottom), true=A(top)
+    // Lamp on when SW1 and SW2 connect same wire:
+    //   both on A (top) OR both on B (bottom)
+    return a === b;
+  }
+
+  function toggle(sw) {
+    state[sw] = !state[sw];
+    document.getElementById('btn' + sw).classList.toggle('active', state[sw]);
+    render();
+  }
+
+  function render() {
+    const a = state.A;
+    const b = state.B;
+    const on = isLampOn(a, b);
+
+    // Update switch labels
+    document.getElementById('stateA').textContent = 'Stellung: ' + (a ? 'OBEN' : 'UNTEN');
+    document.getElementById('stateB').textContent = 'Stellung: ' + (b ? 'OBEN' : 'UNTEN');
+
+    // Switch arms in SVG
+    // SW1 arm: from (200,40) to (240,30) if A (top), to (240,60) if B (bottom)
+    const sw1arm = document.getElementById('sw1arm');
+    sw1arm.setAttribute('x2', '240');
+    sw1arm.setAttribute('y2', a ? '30' : '60');
+
+    // SW2 arm: from (340,30) to (380,40) if A (top), from (340,60) to (380,40) if B (bottom)
+    const sw2arm = document.getElementById('sw2arm');
+    sw2arm.setAttribute('x1', '340');
+    sw2arm.setAttribute('y1', b ? '30' : '60');
+
+    // Wire colors
+    // w1: battery to SW1 input — always part of active path from battery
+    const baseOn = ON; // battery side always "live" visually
+    setWire('w1', ON);
+    setWire('w7', on ? ON : OFF);
+    setWire('w6', on ? ON : OFF);
+    setWire('w5', on ? ON : OFF);
+    setWire('w4', on ? ON : OFF);
+    setWire('w3', on ? ON : OFF);
+
+    // Cross wires: w2a (top A path), w2b (bottom B path)
+    setWire('w2a', (a && b) ? ON : OFF);   // top path active only if both on A
+    setWire('w2b', (!a && !b) ? ON : OFF); // bottom path active only if both on B
+
+    // Lamp
+    const lampColor = on ? ON : OFF;
+    setAttr('lampCircle', 'stroke', lampColor);
+    setAttr('lampX1', 'stroke', lampColor);
+    setAttr('lampX2', 'stroke', lampColor);
+    document.getElementById('lampGlowCircle').setAttribute('opacity', on ? '1' : '0');
+
+    // Status bar
+    const statusEl = document.getElementById('lampStatus');
+    statusEl.className = 'lamp-status ' + (on ? 'on' : 'off');
+    document.getElementById('lampText').textContent = on
+      ? '💡 Lampe leuchtet!'
+      : 'Lampe leuchtet nicht';
+
+    // Update table
+    renderTable(a, b);
+  }
+
+  function setWire(id, color) {
+    const el = document.getElementById(id);
+    if (el) el.setAttribute('stroke', color);
+  }
+
+  function setAttr(id, attr, val) {
+    const el = document.getElementById(id);
+    if (el) el.setAttribute(attr, val);
+  }
+
+  function renderTable(curA, curB) {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+    combos.forEach((c, i) => {
+      const on = isLampOn(c.a, c.b);
+      const isCurrent = (c.a === curA && c.b === curB);
+      const tr = document.createElement('tr');
+      if (isCurrent) tr.className = 'current-row';
+      tr.innerHTML = `
+        <td><span class="row-indicator"></span>Kombination ${i + 1}</td>
+        <td><span class="state-badge ${c.a ? 'badge-up' : 'badge-down'}">${c.a ? 'OBEN' : 'UNTEN'}</span></td>
+        <td><span class="state-badge ${c.b ? 'badge-pink-up' : 'badge-pink-down'}">${c.b ? 'OBEN' : 'UNTEN'}</span></td>
+        <td class="lamp-cell ${on ? 'filled' : 'empty'}">${on ? '💡' : '○'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Initial render
+  render();
+</script>
+</body>
+</html>
