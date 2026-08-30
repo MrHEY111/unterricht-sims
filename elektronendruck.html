@@ -266,6 +266,10 @@
   tbody tr.current-row { background: rgba(245,200,66,0.06); }
   tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
 
+  /* Noch nicht angefahrene Stufe: Zeile steht da, ihr Ergebnis nicht. */
+  tbody tr.locked td { color: var(--muted); }
+  td.offen { color: #454b6b; font-family: 'DM Mono', monospace; font-size: 14px; }
+
   td { padding: 12px; text-align: center; font-size: 13px; color: var(--text); }
   td:first-child { text-align: left; padding-left: 18px; }
 
@@ -420,7 +424,7 @@
   </table>
 </div>
 
-<p class="hint">Ziehe den Regler, um Elektronen von einem Pol zum anderen zu verschieben.<br>Die aktuelle Zeile ist in der Tabelle markiert.</p>
+<p class="hint">Ziehe den Regler, um Elektronen von einem Pol zum anderen zu verschieben.<br>Eine Zeile der Tabelle füllt sich erst, wenn du die Stufe eingestellt hast.</p>
 
 <script>
 (function () {
@@ -509,20 +513,6 @@
     }
   })();
 
-  /* ---------- Tabelle ---------- */
-  (function () {
-    var tbody = document.getElementById('tableBody');
-    for (var i = 0; i < 3; i++) {
-      var tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td><span class="row-indicator"></span>' + WORT_LANG[i] + '</td>' +
-        '<td class="num">' + (9 * i) + '</td>' +
-        '<td><span class="lamp-cell lamp-' + i + '">' +
-        '<span class="lamp-bulb"></span>' + LAMPE[i] + '</span></td>';
-      tbody.appendChild(tr);
-    }
-  })();
-
   /* ---------- Anzeige ---------- */
   var el = {
     slider:   document.getElementById('slider'),
@@ -551,7 +541,32 @@
   }
   var AUS = [58, 64, 96], AN = [245, 200, 66];
 
+  /* ---------- Beobachtungstabelle ----------
+     Eine Zeile zeigt ihr Ergebnis erst, wenn die Stufe eingestellt war.
+     Sonst steht die Antwort auf dem Bildschirm, bevor die Vermutung
+     geschrieben ist. */
+  var gesehen = [false, false, false];
+
+  function zeichneTabelle() {
+    el.body.innerHTML = '';
+    for (var i = 0; i < 3; i++) {
+      var tr = document.createElement('tr');
+      var klasse = (i === stufe ? 'current-row' : '');
+      if (!gesehen[i]) klasse += (klasse ? ' ' : '') + 'locked';
+      tr.className = klasse;
+      tr.innerHTML =
+        '<td><span class="row-indicator"></span>' + WORT_LANG[i] + '</td>' +
+        (gesehen[i]
+          ? '<td class="num">' + (9 * i) + '</td>' +
+            '<td><span class="lamp-cell lamp-' + i + '">' +
+            '<span class="lamp-bulb"></span>' + LAMPE[i] + '</span></td>'
+          : '<td class="offen">–</td><td class="offen">–</td>');
+      el.body.appendChild(tr);
+    }
+  }
+
   function zeichne() {
+    gesehen[stufe] = true;
     var links  = FUELLUNG + VERSCHOBEN * stufe;
     var rechts = FUELLUNG - VERSCHOBEN * stufe;
     var hell   = stufe / 2;
@@ -612,11 +627,7 @@
         ' Elektronen pro Sekunde am Amperemeter · Lampe ' + LAMPE[stufe];
     }
 
-    // Tabellenzeile markieren
-    var trs = el.body.children;
-    for (var k = 0; k < trs.length; k++) {
-      trs[k].className = (k === stufe) ? 'current-row' : '';
-    }
+    zeichneTabelle();
   }
 
   /* ---------- Bewegung ---------- */
@@ -674,6 +685,7 @@
   document.getElementById('btnReset').addEventListener('click', function () {
     stufe = 0;
     el.slider.value = 0;
+    gesehen = [false, false, false];   // auch die Tabelle beginnt wieder leer
     zeichne();
   });
 
