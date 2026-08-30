@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elektronen an den Polen – Physik 10</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d26;
+    --surface2: #242736;
+    --border: #2e3347;
+    --text: #e8eaf0;
+    --muted: #7b82a0;
+    --blue: #4a9eff;
+    --blue-dim: #1e3a5f;
+    --yellow: #f5c842;
+    --yellow-glow: rgba(245,200,66,0.5);
+    --red: #e74c3c;
+    --wire: #3a4060;
+    --radius: 12px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+    gap: 18px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  header { text-align: center; max-width: 620px; }
+
+  .label-tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 1px solid var(--blue);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: var(--muted); }
+
+  /* SCHEMA */
+  .circuit-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 16px 14px;
+    width: 100%;
+    max-width: 620px;
+  }
+
+  svg#circuit { width: 100%; height: auto; display: block; }
+
+  /* STEUERKARTE */
+  .card {
+    width: 100%;
+    max-width: 620px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px 18px;
+  }
+
+  .card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .slider-readout {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .slider-value {
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--yellow);
+    transition: color 0.2s;
+  }
+
+  .slider-value.zero { color: var(--muted); }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 34px;
+    background: transparent;
+    display: block;
+    touch-action: pan-y;
+  }
+
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 10px;
+    border-radius: 5px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+
+  input[type=range]::-moz-range-track {
+    height: 10px;
+    border-radius: 5px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 30px;
+    height: 30px;
+    margin-top: -11px;
+    border-radius: 50%;
+    background: var(--blue);
+    border: 3px solid #0f1117;
+    box-shadow: 0 0 12px rgba(74,158,255,0.45);
+    cursor: pointer;
+  }
+
+  input[type=range]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--blue);
+    border: 3px solid #0f1117;
+    box-shadow: 0 0 12px rgba(74,158,255,0.45);
+    cursor: pointer;
+  }
+
+  .scale-ends {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 11.5px;
+    color: var(--muted);
+    line-height: 1.35;
+    margin-top: 2px;
+  }
+
+  .scale-ends > span { max-width: 46%; }
+  .scale-ends > span:last-child { text-align: right; }
+  .scale-ends .sub { color: #5b6180; }
+
+  .reset-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+  }
+
+  .reset {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 12px 26px;
+    min-height: 46px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .reset:active { transform: translateY(1px); background: var(--blue-dim); border-color: var(--blue); }
+  @media (hover: hover) { .reset:hover { border-color: var(--blue); } }
+
+  /* STATUSLEISTE */
+  .status {
+    width: 100%;
+    max-width: 620px;
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.45;
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+
+  .status.on {
+    background: rgba(245,200,66,0.08);
+    border-color: rgba(245,200,66,0.4);
+    color: var(--yellow);
+    box-shadow: 0 0 20px rgba(245,200,66,0.08);
+  }
+
+  .status.off { background: var(--surface); color: var(--muted); }
+
+  .status-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+
+  .status.on .status-dot { background: var(--yellow); box-shadow: 0 0 10px var(--yellow-glow); }
+  .status.off .status-dot { background: var(--border); }
+
+  /* TABELLE */
+  .table-wrap {
+    width: 100%;
+    max-width: 620px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .table-header {
+    padding: 14px 18px 10px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    padding: 10px 12px;
+    text-align: center;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    line-height: 1.3;
+  }
+
+  thead th:first-child { text-align: left; padding-left: 18px; }
+
+  tbody tr.current-row { background: rgba(245,200,66,0.06); }
+  tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+
+  td { padding: 12px; text-align: center; font-size: 13px; color: var(--text); }
+  td:first-child { text-align: left; padding-left: 18px; }
+
+  .num { font-family: 'DM Mono', monospace; font-size: 14px; }
+
+  .lamp-cell { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; }
+  .lamp-bulb { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .lamp-0 .lamp-bulb { background: var(--border); }
+  .lamp-0 { color: var(--muted); }
+  .lamp-1 .lamp-bulb { background: rgba(245,200,66,0.55); }
+  .lamp-2 .lamp-bulb { background: var(--yellow); box-shadow: 0 0 8px var(--yellow-glow); }
+
+  .row-indicator {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--yellow);
+    margin-right: 8px;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  tbody tr.current-row .row-indicator { opacity: 1; }
+
+  .hint {
+    width: 100%;
+    max-width: 620px;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 460px) {
+    h1 { font-size: 19px; }
+    .slider-value { font-size: 18px; }
+    td, thead th { padding-left: 10px; padding-right: 10px; }
+    td:first-child, thead th:first-child { padding-left: 12px; }
+    td, .lamp-cell { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="label-tag">Physik · Klasse 10</div>
+  <h1>Elektronen an den Polen</h1>
+  <p class="subtitle">Die Gesamtzahl der Elektronen bleibt gleich – nur ihre Verteilung ändert sich.</p>
+</header>
+
+<!-- SCHEMA -->
+<div class="circuit-wrap">
+  <svg id="circuit" viewBox="0 0 580 305" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="lampGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#f5c842" stop-opacity="0.55"/>
+        <stop offset="100%" stop-color="#f5c842" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+
+    <!-- Lampenschein (hinter allem) -->
+    <circle id="lampGlowCircle" cx="290" cy="60" r="46" fill="url(#lampGlow)" opacity="0"/>
+
+    <!-- LEITUNG -->
+    <polyline id="wire"
+      points="150,225 60,225 60,60 520,60 520,225 430,225"
+      fill="none" stroke="#3a4060" stroke-width="4"
+      stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- QUELLE -->
+    <rect x="150" y="150" width="280" height="140" rx="10"
+      fill="#1a1d26" stroke="#2e3347" stroke-width="1.5"/>
+    <rect x="144" y="219" width="8" height="12" rx="2" fill="#2e3347"/>
+    <rect x="428" y="219" width="8" height="12" rx="2" fill="#2e3347"/>
+
+    <!-- Pol-Behälter -->
+    <rect id="boxL" x="170" y="186" width="76" height="90" rx="8"
+      fill="#0f1117" stroke="#2e3347" stroke-width="1.5"/>
+    <rect id="boxR" x="334" y="186" width="76" height="90" rx="8"
+      fill="#0f1117" stroke="#2e3347" stroke-width="1.5"/>
+
+    <g id="dotsL"></g>
+    <g id="dotsR"></g>
+
+    <!-- Pol-Beschriftungen -->
+    <text id="nameL" x="208" y="168" text-anchor="middle" font-family="DM Mono, monospace" font-size="9" letter-spacing="0.08em" fill="#7b82a0">POL LINKS</text>
+    <text id="tagL"  x="208" y="180" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="10" fill="#7b82a0">gleich viele</text>
+    <text id="nameR" x="372" y="168" text-anchor="middle" font-family="DM Mono, monospace" font-size="9" letter-spacing="0.08em" fill="#7b82a0">POL RECHTS</text>
+    <text id="tagR"  x="372" y="180" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="10" fill="#7b82a0">gleich viele</text>
+
+    <!-- Unterschied (Mitte) -->
+    <text x="290" y="200" text-anchor="middle" font-family="DM Mono, monospace" font-size="9" letter-spacing="0.08em" fill="#7b82a0">UNTERSCHIED</text>
+    <text id="diffWord" x="290" y="226" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="16" font-weight="600" fill="#7b82a0">kein</text>
+
+    <!-- LAMPE (deckt die Leitung ab, Elektronen laufen darüber) -->
+    <circle id="lampCircle" cx="290" cy="60" r="22" fill="#1a1d26" stroke="#3a4060" stroke-width="2.5"/>
+    <line id="lampX1" x1="275" y1="45" x2="305" y2="75" stroke="#3a4060" stroke-width="2" stroke-linecap="round"/>
+    <line id="lampX2" x1="305" y1="45" x2="275" y2="75" stroke="#3a4060" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- Zählstelle -->
+    <line x1="452" y1="44" x2="452" y2="76" stroke="#7b82a0" stroke-width="1.5" stroke-dasharray="3 3"/>
+    <text x="452" y="26" text-anchor="middle" font-family="DM Mono, monospace" font-size="9" letter-spacing="0.06em" fill="#7b82a0">ZÄHLSTELLE</text>
+    <text x="452" y="37" text-anchor="middle" font-family="DM Mono, monospace" font-size="9" letter-spacing="0.06em" fill="#5b6180">(AMPEREMETER)</text>
+
+    <!-- Elektronen in der Leitung -->
+    <g id="flow"></g>
+
+    <!-- Bauteil-Beschriftungen -->
+    <text x="150" y="44" text-anchor="middle" font-family="DM Mono, monospace" font-size="9" letter-spacing="0.08em" fill="#7b82a0">LEITUNG</text>
+    <text x="290" y="26" text-anchor="middle" font-family="DM Mono, monospace" font-size="9" letter-spacing="0.08em" fill="#7b82a0">LAMPE</text>
+    <text x="290" y="142" text-anchor="middle" font-family="DM Mono, monospace" font-size="9" letter-spacing="0.08em" fill="#7b82a0">QUELLE (BATTERIE)</text>
+  </svg>
+</div>
+
+<!-- REGLER -->
+<div class="card">
+  <span class="card-label">Unterschied zwischen den Polen</span>
+  <div class="slider-readout">
+    <span class="slider-value zero" id="diffOut">kein Unterschied</span>
+  </div>
+  <input type="range" id="slider" min="0" max="2" step="1" value="0"
+         aria-label="Unterschied zwischen den Polen">
+  <div class="scale-ends">
+    <span>beide Pole gleich<br><span class="sub">(Batterie leer)</span></span>
+    <span>größter Unterschied<br><span class="sub">(Batterie voll)</span></span>
+  </div>
+  <div class="reset-row">
+    <button class="reset" type="button" id="btnReset">Zurücksetzen</button>
+  </div>
+</div>
+
+<!-- STATUS -->
+<div class="status off" id="status">
+  <div class="status-dot"></div>
+  <span id="statusText">Kein Unterschied zwischen den Polen · die Elektronen in der Leitung stehen still · Lampe aus</span>
+</div>
+
+<!-- BEOBACHTUNGSTABELLE -->
+<div class="table-wrap">
+  <div class="table-header">Beobachtungstabelle</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Unterschied zwischen<br>den Polen</th>
+        <th>Elektronen<br>pro Sekunde</th>
+        <th>Lampe</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<p class="hint">Ziehe den Regler, um Elektronen von einem Pol zum anderen zu verschieben.<br>Die aktuelle Zeile ist in der Tabelle markiert.</p>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Zustand ---------- */
+  var FUELLUNG   = 12;   // Elektronen je Pol, wenn kein Unterschied besteht
+  var VERSCHOBEN = 4;    // Elektronen, die eine Reglerstufe verschiebt
+  var stufe      = 0;    // 0 = kein, 1 = mittlerer, 2 = hoher Unterschied
+
+  var MAX_PRO_POL = 24;  // Plätze im Pol-Behälter
+  var N_LEITUNG   = 18;  // Elektronen in der Leitung – konstant, sie sind immer da
+  var DOT_SPALTEN = [-27, -9, 9, 27];
+
+  var WORT      = ['kein', 'mittel', 'hoch'];
+  var WORT_LANG = ['kein Unterschied', 'mittlerer Unterschied', 'hoher Unterschied'];
+  var LAMPE     = ['aus', 'leuchtet schwach', 'leuchtet hell'];
+
+  function proSekunde() { return 9 * stufe; }   // 0, 9, 18
+
+  /* ---------- Leitungsweg ---------- */
+  var PUNKTE = [[150,225],[60,225],[60,60],[520,60],[520,225],[430,225]];
+  var abschnitte = [];
+  var laenge = 0;
+  (function () {
+    for (var i = 0; i < PUNKTE.length - 1; i++) {
+      var x1 = PUNKTE[i][0], y1 = PUNKTE[i][1];
+      var x2 = PUNKTE[i+1][0], y2 = PUNKTE[i+1][1];
+      var dx = x2 - x1, dy = y2 - y1;
+      var len = Math.sqrt(dx*dx + dy*dy);
+      abschnitte.push({ x1: x1, y1: y1, ux: dx/len, uy: dy/len, len: len });
+      laenge += len;
+    }
+  })();
+
+  // s muss bereits in [0, laenge] liegen
+  function punktBei(s) {
+    for (var i = 0; i < abschnitte.length; i++) {
+      var a = abschnitte[i];
+      if (s <= a.len) return [a.x1 + a.ux * s, a.y1 + a.uy * s];
+      s -= a.len;
+    }
+    var e = abschnitte[abschnitte.length - 1];
+    return [e.x1 + e.ux * e.len, e.y1 + e.uy * e.len];
+  }
+
+  // Geschwindigkeit so, dass an der Zählstelle wirklich proSekunde() Elektronen
+  // pro Sekunde vorbeikommen: v = Rate * Weglaenge / Anzahl
+  function tempo() { return proSekunde() * laenge / N_LEITUNG; }
+
+  /* ---------- SVG-Aufbau ---------- */
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var punkteL = [], punkteR = [];
+
+  function baueDots(gruppenId, cx, ziel) {
+    var g = document.getElementById(gruppenId);
+    for (var i = 0; i < MAX_PRO_POL; i++) {
+      var reihe = Math.floor(i / 4), spalte = i % 4;
+      var c = document.createElementNS(SVG_NS, 'circle');
+      c.setAttribute('cx', cx + DOT_SPALTEN[spalte]);
+      c.setAttribute('cy', 263 - reihe * 14);
+      c.setAttribute('r', 5.5);
+      c.setAttribute('fill', '#4a9eff');
+      g.appendChild(c);
+      ziel.push(c);
+    }
+  }
+  baueDots('dotsL', 208, punkteL);
+  baueDots('dotsR', 372, punkteR);
+
+  var flossen = [];
+  (function () {
+    var g = document.getElementById('flow');
+    for (var i = 0; i < N_LEITUNG; i++) {
+      var schweif = document.createElementNS(SVG_NS, 'line');
+      schweif.setAttribute('stroke', '#4a9eff');
+      schweif.setAttribute('stroke-width', '3.5');
+      schweif.setAttribute('stroke-linecap', 'round');
+      schweif.setAttribute('opacity', '0');
+      g.appendChild(schweif);
+      var kugel = document.createElementNS(SVG_NS, 'circle');
+      kugel.setAttribute('r', '4.2');
+      kugel.setAttribute('fill', '#4a9eff');
+      g.appendChild(kugel);
+      flossen.push({ schweif: schweif, kugel: kugel });
+    }
+  })();
+
+  /* ---------- Tabelle ---------- */
+  (function () {
+    var tbody = document.getElementById('tableBody');
+    for (var i = 0; i < 3; i++) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><span class="row-indicator"></span>' + WORT_LANG[i] + '</td>' +
+        '<td class="num">' + (9 * i) + '</td>' +
+        '<td><span class="lamp-cell lamp-' + i + '">' +
+        '<span class="lamp-bulb"></span>' + LAMPE[i] + '</span></td>';
+      tbody.appendChild(tr);
+    }
+  })();
+
+  /* ---------- Anzeige ---------- */
+  var el = {
+    slider:   document.getElementById('slider'),
+    diffOut:  document.getElementById('diffOut'),
+    diffWord: document.getElementById('diffWord'),
+    nameL:    document.getElementById('nameL'),
+    nameR:    document.getElementById('nameR'),
+    tagL:     document.getElementById('tagL'),
+    tagR:     document.getElementById('tagR'),
+    boxL:     document.getElementById('boxL'),
+    boxR:     document.getElementById('boxR'),
+    lampC:    document.getElementById('lampCircle'),
+    lampX1:   document.getElementById('lampX1'),
+    lampX2:   document.getElementById('lampX2'),
+    lampGlow: document.getElementById('lampGlowCircle'),
+    status:   document.getElementById('status'),
+    statusTx: document.getElementById('statusText'),
+    body:     document.getElementById('tableBody')
+  };
+
+  function mische(a, b, t) {
+    var r  = Math.round(a[0] + (b[0] - a[0]) * t);
+    var g  = Math.round(a[1] + (b[1] - a[1]) * t);
+    var bl = Math.round(a[2] + (b[2] - a[2]) * t);
+    return 'rgb(' + r + ',' + g + ',' + bl + ')';
+  }
+  var AUS = [58, 64, 96], AN = [245, 200, 66];
+
+  function zeichne() {
+    var links  = FUELLUNG + VERSCHOBEN * stufe;
+    var rechts = FUELLUNG - VERSCHOBEN * stufe;
+    var hell   = stufe / 2;
+
+    // Pol-Behälter füllen
+    for (var i = 0; i < MAX_PRO_POL; i++) {
+      punkteL[i].setAttribute('opacity', i < links  ? '1' : '0');
+      punkteR[i].setAttribute('opacity', i < rechts ? '1' : '0');
+    }
+
+    el.diffWord.textContent = WORT[stufe];
+    el.diffWord.setAttribute('fill', stufe > 0 ? '#f5c842' : '#7b82a0');
+    el.diffOut.textContent = WORT_LANG[stufe];
+    el.diffOut.className = 'slider-value' + (stufe > 0 ? '' : ' zero');
+
+    if (stufe > 0) {
+      el.nameL.textContent = 'MINUSPOL';
+      el.tagL.textContent  = 'Überschuss';
+      el.nameR.textContent = 'PLUSPOL';
+      el.tagR.textContent  = 'Mangel';
+      el.nameL.setAttribute('fill', '#4a9eff');
+      el.tagL.setAttribute('fill', '#4a9eff');
+      el.nameR.setAttribute('fill', '#e74c3c');
+      el.tagR.setAttribute('fill', '#e74c3c');
+      el.boxL.setAttribute('stroke', '#4a9eff');
+      el.boxR.setAttribute('stroke', '#e74c3c');
+    } else {
+      el.nameL.textContent = 'POL LINKS';
+      el.tagL.textContent  = 'gleich viele';
+      el.nameR.textContent = 'POL RECHTS';
+      el.tagR.textContent  = 'gleich viele';
+      el.nameL.setAttribute('fill', '#7b82a0');
+      el.tagL.setAttribute('fill', '#7b82a0');
+      el.nameR.setAttribute('fill', '#7b82a0');
+      el.tagR.setAttribute('fill', '#7b82a0');
+      el.boxL.setAttribute('stroke', '#2e3347');
+      el.boxR.setAttribute('stroke', '#2e3347');
+    }
+
+    // Lampe
+    var farbe = mische(AUS, AN, hell);
+    el.lampC.setAttribute('stroke', farbe);
+    el.lampX1.setAttribute('stroke', farbe);
+    el.lampX2.setAttribute('stroke', farbe);
+    el.lampGlow.setAttribute('opacity', hell.toFixed(2));
+
+    // Statusleiste
+    if (stufe === 0) {
+      el.status.className = 'status off';
+      el.statusTx.textContent =
+        'Kein Unterschied zwischen den Polen · die Elektronen in der Leitung stehen still · ' +
+        '0 Elektronen pro Sekunde · Lampe aus';
+    } else {
+      el.status.className = 'status on';
+      el.statusTx.textContent =
+        WORT_LANG[stufe].charAt(0).toUpperCase() + WORT_LANG[stufe].slice(1) +
+        ' zwischen den Polen · ' + proSekunde() +
+        ' Elektronen pro Sekunde am Amperemeter · Lampe ' + LAMPE[stufe];
+    }
+
+    // Tabellenzeile markieren
+    var trs = el.body.children;
+    for (var k = 0; k < trs.length; k++) {
+      trs[k].className = (k === stufe) ? 'current-row' : '';
+    }
+  }
+
+  /* ---------- Bewegung ---------- */
+  var versatz = 0;
+  var letzte = null;
+
+  function platziere(v) {
+    var schweifLaenge = Math.min(26, v * 0.045);
+    var abstand = laenge / N_LEITUNG;
+
+    for (var i = 0; i < N_LEITUNG; i++) {
+      var s = (versatz + i * abstand) % laenge;
+      var p = punktBei(s);
+      var f = flossen[i];
+      f.kugel.setAttribute('cx', p[0].toFixed(1));
+      f.kugel.setAttribute('cy', p[1].toFixed(1));
+
+      // Der Schweif darf nie ueber den Anfang des Weges hinausreichen, sonst
+      // wuerde er quer durch die Quelle vom Plus- zum Minuspol gezogen und
+      // suggerierte einen Elektronenuebertritt zwischen den Polen.
+      var start = s - schweifLaenge;
+      if (start < 0) start = 0;
+      if (s - start > 1) {
+        var q = punktBei(start);
+        f.schweif.setAttribute('x1', q[0].toFixed(1));
+        f.schweif.setAttribute('y1', q[1].toFixed(1));
+        f.schweif.setAttribute('x2', p[0].toFixed(1));
+        f.schweif.setAttribute('y2', p[1].toFixed(1));
+        f.schweif.setAttribute('opacity', '0.45');
+      } else {
+        f.schweif.setAttribute('opacity', '0');
+      }
+    }
+  }
+
+  function schritt(zeit) {
+    if (letzte === null) letzte = zeit;
+    var dt = Math.min((zeit - letzte) / 1000, 0.05);
+    letzte = zeit;
+
+    var v = tempo();
+    versatz += v * dt;
+    if (versatz > laenge) versatz -= laenge;
+
+    platziere(v);
+    requestAnimationFrame(schritt);
+  }
+
+  /* ---------- Bedienung ---------- */
+  el.slider.addEventListener('input', function () {
+    stufe = parseInt(el.slider.value, 10);
+    zeichne();
+  });
+
+  document.getElementById('btnReset').addEventListener('click', function () {
+    stufe = 0;
+    el.slider.value = 0;
+    zeichne();
+  });
+
+  zeichne();
+  platziere(tempo());
+  requestAnimationFrame(schritt);
+
+  // Nach einem Tab- oder App-Wechsel laeuft requestAnimationFrame nicht weiter;
+  // beim Zurueckkommen die Zeitbasis neu setzen, damit die Elektronen nicht springen.
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) letzte = null;
+  });
+})();
+</script>
+</body>
+</html>
