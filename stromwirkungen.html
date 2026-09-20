@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wirkungen des elektrischen Stroms – Physik 8</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d26;
+    --surface2: #242736;
+    --border: #2e3347;
+    --text: #e8eaf0;
+    --muted: #7b82a0;
+    --blue: #4a9eff;
+    --blue-dim: #1e3a5f;
+    --yellow: #f5c842;
+    --yellow-glow: rgba(245,200,66,0.5);
+    --red: #e74c3c;
+    --wire-off: #3a4060;
+    --wire-on: #f5c842;
+    --radius: 12px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+
+  .seite {
+    width: 100%;
+    max-width: 620px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* KOPF */
+  .kopf { display: flex; flex-direction: column; gap: 14px; text-align: center; }
+
+  .label-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 1px solid var(--blue);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+
+  h1 { font-size: 21px; font-weight: 600; margin-bottom: 4px; line-height: 1.25; }
+  .leitsatz { font-size: 13.5px; color: var(--muted); line-height: 1.4; }
+
+  /* REITER */
+  .reiter {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .reiter-taste {
+    flex: 1;
+    min-height: 48px;
+    padding: 0 10px;
+    border-radius: 9px;
+    border: 1.5px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .reiter-taste.aktiv { background: var(--blue-dim); border-color: var(--blue); color: #fff; }
+  @media (hover: hover) { .reiter-taste:not(.aktiv):hover { color: var(--text); background: var(--surface2); } }
+
+  /* MODUL */
+  .modul { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+  .modul[hidden] { display: none; }
+  .spalte { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  .card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .card-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  /* SCHALTBILD */
+  .schau { display: flex; gap: 12px; align-items: stretch; }
+  .schau-bild { flex: 1; min-width: 0; display: flex; align-items: center; }
+  .schau-bild svg { width: 100%; height: auto; display: block; }
+  .schau-bild svg text { font-family: var(--mono); }
+
+  /* TEMPERATURBALKEN */
+  .thermo { width: 84px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
+
+  .thermo-titel {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .thermo-koerper { flex: 1; display: flex; gap: 8px; min-height: 160px; }
+
+  .thermo-balken {
+    position: relative;
+    width: 20px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .thermo-farbe {
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+    background: linear-gradient(to top, #8a90a2 0%, #8a90a2 18%, #ab807e 38%, #a82015 63%, #ffb429 90%, #ffd36b 100%);
+  }
+
+  .thermo-decke { position: absolute; top: 0; left: 0; right: 0; height: 75%; background: var(--surface2); }
+  .thermo-balken i { position: absolute; left: 0; right: 0; height: 1px; background: var(--bg); opacity: 0.8; }
+
+  .thermo-woerter { flex: 1; display: flex; flex-direction: column; }
+
+  .thermo-woerter span {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    font-size: 12.5px;
+    color: var(--muted);
+    transition: color 0.2s;
+  }
+
+  .thermo-woerter span.aktiv { color: var(--text); font-weight: 600; }
+
+  /* STEUERKARTE */
+  .regler { display: flex; flex-wrap: wrap; gap: 14px; }
+  .regler-gruppe { flex: 1 1 230px; min-width: 0; }
+  .tasten { display: flex; gap: 6px; }
+
+  .taste {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 6px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  }
+
+  .taste.pfeil { font-size: 22px; line-height: 1; }
+  .taste:active { transform: translateY(1px); }
+  .taste.aktiv { background: var(--blue-dim); border-color: var(--blue); color: #fff; box-shadow: 0 0 12px rgba(74,158,255,0.25); }
+  @media (hover: hover) { .taste:not(.aktiv):hover { border-color: var(--blue); } }
+
+  .reset-row { display: flex; justify-content: flex-end; margin-top: 14px; }
+
+  .reset {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 0 22px;
+    min-height: 46px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
+  }
+
+  .reset:active { transform: translateY(1px); background: var(--blue-dim); border-color: var(--blue); color: var(--text); }
+  @media (hover: hover) { .reset:hover { border-color: var(--blue); color: var(--text); } }
+
+  /* TABELLE */
+  .table-wrap {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    overflow-x: auto;
+  }
+
+  .table-header {
+    padding: 13px 16px 10px;
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .table-header .zusatz { color: #5b6180; text-transform: none; letter-spacing: 0.02em; }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    padding: 9px 8px;
+    text-align: center;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    line-height: 1.3;
+  }
+
+  thead th:first-child { text-align: left; padding-left: 16px; }
+
+  thead th .einheit {
+    display: block;
+    margin-top: 3px;
+    font-size: 10px;
+    letter-spacing: 0;
+    color: #5b6180;
+  }
+
+  tbody tr { transition: background 0.15s; }
+  tbody tr.current-row { background: rgba(245,200,66,0.08); box-shadow: inset 3px 0 0 var(--yellow); }
+  tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+
+  td { padding: 9px 8px; text-align: center; font-size: 13px; color: var(--text); line-height: 1.3; }
+  td:first-child { text-align: left; padding-left: 16px; white-space: nowrap; }
+
+  /* Noch nicht eingestellte Kombination: Zeile steht da, ihr Ergebnis nicht. */
+  tbody tr.locked td { color: var(--muted); }
+  tbody tr.locked.current-row td { color: var(--text); }
+  td.offen { color: #454b6b !important; font-family: var(--mono); }
+  td.wartet { color: var(--yellow) !important; font-family: var(--mono); letter-spacing: 0.15em; }
+
+  .row-indicator {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--yellow);
+    margin-right: 8px;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  tbody tr.current-row .row-indicator { opacity: 1; }
+
+  .temp-zelle { display: inline-flex; align-items: center; gap: 7px; }
+  .temp-punkt { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .ja { color: var(--yellow); font-weight: 600; }
+
+  .tab-notiz { font-size: 12px; color: var(--muted); padding: 9px 16px; border-top: 1px solid var(--border); }
+  .tab-notiz[hidden] { display: none; }
+
+  .hint { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.6; }
+  .pfeil-zelle { font-size: 18px; line-height: 1; }
+
+  @media (max-width: 460px) {
+    h1 { font-size: 19px; }
+    .card { padding: 14px 12px; }
+    .thermo { width: 78px; }
+    td, thead th { padding-left: 6px; padding-right: 6px; }
+    td:first-child, thead th:first-child { padding-left: 12px; }
+    td { font-size: 12.5px; }
+    .taste { font-size: 14px; }
+    /* Schaltbild ist hier stark verkleinert: Beschriftung im Bild größer setzen */
+    .schau-bild svg text { font-size: 15px; }
+  }
+
+  @media (min-width: 860px) {
+    .seite { max-width: 1000px; }
+    .kopf { flex-direction: row; align-items: flex-end; justify-content: space-between; text-align: left; gap: 24px; }
+    .reiter { width: 400px; flex-shrink: 0; }
+    .modul { grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr); }
+    .hint { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="seite">
+
+<header class="kopf">
+  <div>
+    <div class="label-tag">Physik · Jahrgang 8</div>
+    <h1>Wirkungen des elektrischen Stroms</h1>
+    <p class="leitsatz">🔮 Vermuten–Prüfen: Ich vermute zuerst – dann prüfe ich.</p>
+  </div>
+  <div class="reiter" role="tablist" aria-label="Module">
+    <button type="button" class="reiter-taste aktiv" role="tab" id="reiter-draht" aria-controls="modul-draht" aria-selected="true">Draht</button>
+    <button type="button" class="reiter-taste" role="tab" id="reiter-kompass" aria-controls="modul-kompass" aria-selected="false">Kompass</button>
+    <button type="button" class="reiter-taste" role="tab" id="reiter-spule" aria-controls="modul-spule" aria-selected="false">Spule</button>
+  </div>
+</header>
+
+<!-- ===================== MODUL 1 · DRAHT ===================== -->
+<section class="modul" id="modul-draht" role="tabpanel" aria-labelledby="reiter-draht">
+  <div class="spalte">
+    <div class="card schau">
+      <div class="schau-bild">
+        <svg id="dBild" viewBox="0 0 420 280" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Schaltbild: Spannungsquelle, Schalter und ein gerades Drahtstück">
+          <defs>
+            <!-- userSpaceOnUse: eine waagerechte Linie hat keine Höhe, mit der
+                 Voreinstellung (Anteil der Umrandung) verschwände der Schein. -->
+            <filter id="dGluehen" filterUnits="userSpaceOnUse" x="60" y="0" width="300" height="140">
+              <feGaussianBlur stdDeviation="7"/>
+            </filter>
+          </defs>
+
+          <!-- Zuleitungen -->
+          <polyline class="dLeitung" points="110,70 40,70 40,220 90,220" fill="none" stroke="#3a4060"
+                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline class="dLeitung" points="140,220 380,220 380,70 310,70" fill="none" stroke="#3a4060"
+                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <!-- Drahtstück: Schein · Draht · heller Kern -->
+          <line id="dSchein" x1="120" y1="70" x2="300" y2="70" stroke="#ffab2e" stroke-width="20"
+                stroke-linecap="round" filter="url(#dGluehen)" opacity="0"/>
+          <line id="dDraht" x1="112" y1="70" x2="308" y2="70" stroke="#8a90a2" stroke-width="3"/>
+          <line id="dKern" x1="116" y1="70" x2="304" y2="70" stroke="#fff2c2" stroke-width="1.2"
+                stroke-linecap="round" opacity="0"/>
+
+          <!-- Klemmen -->
+          <rect x="103" y="58" width="11" height="24" rx="2.5" fill="#7b82a0"/>
+          <rect x="306" y="58" width="11" height="24" rx="2.5" fill="#7b82a0"/>
+          <text id="dDrahtText" x="210" y="34" text-anchor="middle" font-size="12" letter-spacing="0.08em" fill="#7b82a0">DRAHTSTÜCK · DÜNN</text>
+
+          <!-- Schalter -->
+          <line id="dArm" x1="90" y1="220" x2="140" y2="220" stroke="#e8eaf0" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="90" cy="220" r="4.5" fill="#4a9eff"/>
+          <circle cx="140" cy="220" r="4" fill="#4a9eff" opacity="0.75"/>
+          <text x="115" y="252" text-anchor="middle" font-size="12" letter-spacing="0.08em" fill="#7b82a0">SCHALTER</text>
+
+          <!-- Quelle -->
+          <rect x="222" y="205" width="56" height="30" rx="5" fill="#1a1d26" stroke="#4a5170" stroke-width="1.5"/>
+          <rect x="215" y="212" width="8" height="16" rx="2" fill="#4a9eff"/>
+          <rect x="277" y="215" width="5" height="10" rx="1" fill="#7b82a0"/>
+          <path d="M231,220 h10 M236,215 v10" stroke="#4a9eff" stroke-width="2" stroke-linecap="round"/>
+          <path d="M260,220 h10" stroke="#7b82a0" stroke-width="2" stroke-linecap="round"/>
+          <text x="250" y="254" text-anchor="middle" font-size="12" letter-spacing="0.08em" fill="#7b82a0">QUELLE</text>
+          <text id="dStromText" x="250" y="270" text-anchor="middle" font-size="11" fill="#5b6180">Stromstärke: aus</text>
+        </svg>
+      </div>
+
+      <div class="thermo" aria-hidden="true">
+        <div class="thermo-titel">Temperatur</div>
+        <div class="thermo-koerper">
+          <div class="thermo-balken">
+            <div class="thermo-farbe"></div>
+            <div class="thermo-decke" id="dDecke"></div>
+            <i style="top:25%"></i><i style="top:50%"></i><i style="top:75%"></i>
+          </div>
+          <div class="thermo-woerter" id="dWoerter">
+            <span>glühend</span><span>heiß</span><span>warm</span><span>kalt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="regler">
+        <div class="regler-gruppe">
+          <span class="card-label" id="dStromLabel">Stromstärke</span>
+          <div class="tasten" id="dStromTasten" role="group" aria-labelledby="dStromLabel"></div>
+        </div>
+        <div class="regler-gruppe">
+          <span class="card-label" id="dDickeLabel">Drahtdicke</span>
+          <div class="tasten" id="dDickeTasten" role="group" aria-labelledby="dDickeLabel"></div>
+        </div>
+      </div>
+      <div class="reset-row"><button class="reset" type="button" id="dReset">Zurücksetzen</button></div>
+    </div>
+
+    <p class="hint">Tippe auf die Tasten. Eine Tabellenzeile füllt sich erst, wenn du genau diese Einstellung gewählt hast.</p>
+  </div>
+
+  <div class="spalte">
+    <div class="table-wrap">
+      <div class="table-header">Beobachtungstabelle</div>
+      <table>
+        <thead>
+          <tr><th>Stromstärke</th><th>Drahtdicke</th><th>Temperatur</th><th>leuchtet?</th></tr>
+        </thead>
+        <tbody id="dTabelle"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MODUL 2 · KOMPASS ===================== -->
+<section class="modul" id="modul-kompass" role="tabpanel" aria-labelledby="reiter-kompass" hidden>
+  <div class="spalte">
+    <div class="card schau">
+      <div class="schau-bild">
+        <svg id="kBild" viewBox="0 0 480 295" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Blick von oben: ein gerader Draht verläuft in Nord-Süd-Richtung über einem Kompass">
+          <!-- Zuleitungen -->
+          <polyline class="kLeitung" points="170,24 50,24 50,112" fill="none" stroke="#3a4060"
+                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline class="kLeitung" points="50,178 50,266 85,266" fill="none" stroke="#3a4060"
+                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline class="kLeitung" points="135,266 170,266" fill="none" stroke="#3a4060"
+                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <!-- Kompass: liegt unter dem Draht, deshalb vor dem Draht gezeichnet -->
+          <g id="kKompass" transform="translate(205 145)">
+            <circle r="58" fill="#0f1117" stroke="#4a5170" stroke-width="2"/>
+            <path d="M0,-58 v8 M0,58 v-6 M58,0 h-6 M-58,0 h6" stroke="#7b82a0" stroke-width="2" stroke-linecap="round"/>
+            <text x="0" y="-65" text-anchor="middle" font-size="15" font-weight="700" fill="#e8eaf0">N</text>
+            <g id="kNadel">
+              <polygon points="0,-48 7,0 -7,0" fill="#e74c3c"/>
+              <polygon points="0,48 7,0 -7,0" fill="#e8eaf0"/>
+              <circle r="3.5" fill="#7b82a0"/>
+            </g>
+            <text x="10" y="78" text-anchor="middle" font-size="12" letter-spacing="0.08em" fill="#7b82a0">KOMPASS</text>
+          </g>
+
+          <!-- Draht -->
+          <line id="kDraht" x1="170" y1="24" x2="170" y2="266" stroke="#c87533" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="170" cy="24" r="5.5" fill="#7b82a0"/>
+          <circle cx="170" cy="266" r="5.5" fill="#7b82a0"/>
+          <text id="kDrahtText" x="186" y="28" font-size="12" letter-spacing="0.08em" fill="#7b82a0">DRAHT · KUPFER</text>
+          <text x="472" y="289" text-anchor="end" font-size="11" letter-spacing="0.08em" fill="#5b6180">BLICK VON OBEN</text>
+
+          <!-- Stromrichtung im Draht -->
+          <g id="kPfeile" opacity="0">
+            <g class="kPfeil" transform="translate(170 52)">
+              <path d="M-8,5 L0,-5 L8,5" fill="none" stroke="#0f1117" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M-8,5 L0,-5 L8,5" fill="none" stroke="#f5c842" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+            <g class="kPfeil" transform="translate(170 243)">
+              <path d="M-8,5 L0,-5 L8,5" fill="none" stroke="#0f1117" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M-8,5 L0,-5 L8,5" fill="none" stroke="#f5c842" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+          </g>
+
+          <!-- Schalter -->
+          <line id="kArm" x1="85" y1="266" x2="135" y2="266" stroke="#e8eaf0" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="85" cy="266" r="4.5" fill="#4a9eff"/>
+          <circle cx="135" cy="266" r="4" fill="#4a9eff" opacity="0.75"/>
+          <text x="110" y="289" text-anchor="middle" font-size="12" letter-spacing="0.08em" fill="#7b82a0">SCHALTER</text>
+
+          <!-- Quelle: dreht sich mit der Stromrichtung -->
+          <g id="kBatterie" transform="rotate(180 50 145)">
+            <rect x="35" y="117" width="30" height="56" rx="5" fill="#1a1d26" stroke="#4a5170" stroke-width="1.5"/>
+            <rect x="42" y="110" width="16" height="8" rx="2" fill="#4a9eff"/>
+            <rect x="45" y="172" width="10" height="5" rx="1" fill="#7b82a0"/>
+            <path d="M45,131 h10 M50,126 v10" stroke="#4a9eff" stroke-width="2" stroke-linecap="round"/>
+            <path d="M45,160 h10" stroke="#7b82a0" stroke-width="2" stroke-linecap="round"/>
+          </g>
+          <text x="74" y="149" font-size="12" letter-spacing="0.08em" fill="#7b82a0">QUELLE</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="regler">
+        <div class="regler-gruppe">
+          <span class="card-label" id="kStromLabel">Stromstärke</span>
+          <div class="tasten" id="kStromTasten" role="group" aria-labelledby="kStromLabel"></div>
+        </div>
+        <div class="regler-gruppe">
+          <span class="card-label" id="kRichtLabel">Stromrichtung im Draht</span>
+          <div class="tasten" id="kRichtTasten" role="group" aria-labelledby="kRichtLabel"></div>
+        </div>
+        <div class="regler-gruppe" style="flex:1 1 180px">
+          <span class="card-label" id="kAbstandLabel">Abstand Nadel–Draht</span>
+          <div class="tasten" id="kAbstandTasten" role="group" aria-labelledby="kAbstandLabel"></div>
+        </div>
+        <div class="regler-gruppe" style="flex:1.5 1 280px">
+          <span class="card-label" id="kMaterialLabel">Drahtmaterial</span>
+          <div class="tasten" id="kMaterialTasten" role="group" aria-labelledby="kMaterialLabel"></div>
+        </div>
+      </div>
+      <div class="reset-row"><button class="reset" type="button" id="kReset">Zurücksetzen</button></div>
+    </div>
+
+    <p class="hint">Tippe auf die Tasten. Eine Tabellenzeile füllt sich erst, wenn du genau diese Einstellung gewählt hast.</p>
+  </div>
+
+  <div class="spalte">
+    <div class="table-wrap">
+      <div class="table-header">Beobachtung A <span class="zusatz">· bei Abstand nah</span></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Strom-<br>stärke</th><th>Richtung</th><th>Nadel<br>dreht sich?</th>
+            <th>wohin?<span class="einheit">(links/<wbr>rechts)</span></th>
+            <th>wie stark?<span class="einheit">(nicht/<wbr>wenig/<wbr>stark)</span></th>
+          </tr>
+        </thead>
+        <tbody id="kTabelleA"></tbody>
+      </table>
+      <p class="tab-notiz" id="kNotiz" hidden>Für diese Einstellung gibt es keine Tabellenzeile.</p>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header">Beobachtung B <span class="zusatz">· bei Stromstärke groß</span></div>
+      <table>
+        <thead>
+          <tr><th>Abstand</th><th>wie stark?<span class="einheit">(nicht/<wbr>wenig/<wbr>stark)</span></th></tr>
+        </thead>
+        <tbody id="kTabelleB"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MODUL 3 · SPULE ===================== -->
+<section class="modul" id="modul-spule" role="tabpanel" aria-labelledby="reiter-spule" hidden>
+  <div class="spalte">
+    <div class="card schau">
+      <div class="schau-bild">
+        <svg id="sBild" viewBox="0 0 480 320" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Schaltbild: Spannungsquelle, Schalter und eine Spule um einen senkrechten Stab, darunter Büroklammern">
+          <!-- Zuleitungen -->
+          <polyline class="sLeitung" points="281,40 60,40 60,82" fill="none" stroke="#3a4060"
+                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline class="sLeitung" points="60,147 60,190 135,190" fill="none" stroke="#3a4060"
+                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline class="sLeitung" points="185,190 281,190" fill="none" stroke="#3a4060"
+                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <line class="sLeitung" id="sZuOben" x1="281" y1="40" x2="281" y2="110" stroke="#3a4060" stroke-width="3" stroke-linecap="round"/>
+          <line class="sLeitung" id="sZuUnten" x1="281" y1="120" x2="281" y2="190" stroke="#3a4060" stroke-width="3" stroke-linecap="round"/>
+
+          <!-- Spule: hintere Windungshälften · Stab · vordere Windungshälften -->
+          <g id="sHinten"></g>
+          <rect id="sStab" x="289" y="22" width="22" height="186" rx="4" fill="#a39a8c" stroke="#6d665b" stroke-width="1.5"/>
+          <line x1="295" y1="28" x2="295" y2="202" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2.5" stroke-linecap="round"/>
+          <g id="sVorn"></g>
+
+          <text id="sSpuleText" x="336" y="108" font-size="12" letter-spacing="0.08em" fill="#7b82a0">1 WINDUNG</text>
+          <text id="sStabText" x="336" y="126" font-size="12" letter-spacing="0.08em" fill="#7b82a0">HOLZSTAB</text>
+
+          <!-- Schalter -->
+          <line id="sArm" x1="135" y1="190" x2="185" y2="190" stroke="#e8eaf0" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="135" cy="190" r="4.5" fill="#4a9eff"/>
+          <circle cx="185" cy="190" r="4" fill="#4a9eff" opacity="0.75"/>
+          <text x="160" y="216" text-anchor="middle" font-size="12" letter-spacing="0.08em" fill="#7b82a0">SCHALTER</text>
+
+          <!-- Quelle -->
+          <rect x="45" y="87" width="30" height="56" rx="5" fill="#1a1d26" stroke="#4a5170" stroke-width="1.5"/>
+          <rect x="52" y="80" width="16" height="8" rx="2" fill="#4a9eff"/>
+          <rect x="55" y="142" width="10" height="5" rx="1" fill="#7b82a0"/>
+          <path d="M55,101 h10 M60,96 v10" stroke="#4a9eff" stroke-width="2" stroke-linecap="round"/>
+          <path d="M55,130 h10" stroke="#7b82a0" stroke-width="2" stroke-linecap="round"/>
+          <text x="84" y="119" font-size="12" letter-spacing="0.08em" fill="#7b82a0">QUELLE</text>
+
+          <!-- Tisch und Büroklammern -->
+          <line x1="215" y1="301" x2="385" y2="301" stroke="#2e3347" stroke-width="2" stroke-linecap="round"/>
+          <g id="sKlammern"></g>
+          <text x="300" y="316" text-anchor="middle" font-size="11" letter-spacing="0.08em" fill="#5b6180">BÜROKLAMMERN</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="regler">
+        <div class="regler-gruppe" style="flex:1 1 120px">
+          <span class="card-label" id="sStromLabel">Strom</span>
+          <div class="tasten" id="sStromTasten" role="group" aria-labelledby="sStromLabel"></div>
+        </div>
+        <div class="regler-gruppe" style="flex:1.4 1 170px">
+          <span class="card-label" id="sWindLabel">Windungen</span>
+          <div class="tasten" id="sWindTasten" role="group" aria-labelledby="sWindLabel"></div>
+        </div>
+        <div class="regler-gruppe" style="flex:1 1 120px">
+          <span class="card-label" id="sKernLabel">Eisenkern</span>
+          <div class="tasten" id="sKernTasten" role="group" aria-labelledby="sKernLabel"></div>
+        </div>
+      </div>
+      <div class="reset-row"><button class="reset" type="button" id="sReset">Zurücksetzen</button></div>
+    </div>
+
+    <p class="hint">Tippe auf die Tasten. Eine Tabellenzeile füllt sich erst, wenn du genau diese Einstellung gewählt hast.</p>
+  </div>
+
+  <div class="spalte">
+    <div class="table-wrap">
+      <div class="table-header">Beobachtungstabelle</div>
+      <table>
+        <thead>
+          <tr><th>Strom</th><th>Windungen</th><th>Eisenkern</th><th>angehobene<br>Klammern</th></tr>
+        </thead>
+        <tbody id="sTabelle"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Hilfen ---------- */
+  function $(id) { return document.getElementById(id); }
+
+  function mische(a, b, t) {
+    return 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * t) + ',' +
+                    Math.round(a[1] + (b[1] - a[1]) * t) + ',' +
+                    Math.round(a[2] + (b[2] - a[2]) * t) + ')';
+  }
+
+  function begrenze(x, lo, hi) { return x < lo ? lo : (x > hi ? hi : x); }
+
+  var LEITUNG_AUS = [58, 64, 96], LEITUNG_AN = [245, 200, 66];
+
+  /* Zeitlich begrenzter Ablauf. schritt(p) bekommt p von 0 bis 1.
+     Der Zeitgeber daneben schließt den Ablauf auch dann ab, wenn der Browser
+     gerade keine Bilder zeichnet (Seite im Hintergrund). */
+  function bewege(dauer, schritt, fertig) {
+    var start = null, bildId = null, aktiv = true;
+    function ende() {
+      if (!aktiv) return;
+      aktiv = false;
+      if (bildId !== null) cancelAnimationFrame(bildId);
+      clearTimeout(notfall);
+      schritt(1);
+      if (fertig) fertig();
+    }
+    function bild(zeit) {
+      if (!aktiv) return;
+      if (start === null) start = zeit;
+      var p = (zeit - start) / dauer;
+      if (p >= 1) { ende(); return; }
+      schritt(p);
+      bildId = requestAnimationFrame(bild);
+    }
+    var notfall = setTimeout(ende, dauer + 150);
+    bildId = requestAnimationFrame(bild);
+    return {
+      stopp: function () {
+        aktiv = false;
+        if (bildId !== null) cancelAnimationFrame(bildId);
+        clearTimeout(notfall);
+      }
+    };
+  }
+
+  /* Tastenreihe (eine Taste ist immer gewählt). Gibt die Markier-Funktion zurück. */
+  function baueTasten(id, namen, beiWahl, optionen) {
+    var box = $(id), tasten = [];
+    optionen = optionen || {};
+    namen.forEach(function (name, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'taste' + (optionen.pfeil ? ' pfeil' : '');
+      b.textContent = name;
+      if (optionen.ansage) b.setAttribute('aria-label', optionen.ansage[i]);
+      b.addEventListener('click', function () { beiWahl(i); });
+      box.appendChild(b);
+      tasten.push(b);
+    });
+    return function (wahl) {
+      tasten.forEach(function (b, j) {
+        b.classList.toggle('aktiv', j === wahl);
+        b.setAttribute('aria-pressed', j === wahl ? 'true' : 'false');
+      });
+    };
+  }
+
+  function zelleOffen(aktuell) {
+    return aktuell ? '<td class="wartet">…</td>' : '<td class="offen">–</td>';
+  }
+
+  /* ---------- Reiter ---------- */
+  var MODULE = ['draht', 'kompass', 'spule'];
+
+  function zeigeModul(name) {
+    MODULE.forEach(function (n) {
+      var an = (n === name);
+      $('modul-' + n).hidden = !an;
+      $('reiter-' + n).classList.toggle('aktiv', an);
+      $('reiter-' + n).setAttribute('aria-selected', an ? 'true' : 'false');
+    });
+  }
+
+  MODULE.forEach(function (n) {
+    $('reiter-' + n).addEventListener('click', function () { zeigeModul(n); });
+  });
+
+  /* =====================================================================
+     MODUL 1 · DRAHT
+     ===================================================================== */
+  (function () {
+    var STROM = ['aus', 'klein', 'mittel', 'groß'];
+    var DICKE = ['dünn', 'mittel', 'dick'];
+    var TEMP  = ['kalt', 'warm', 'heiß', 'glühend'];
+
+    // Vorgabe-Matrix [Stromstärke][Drahtdicke] -> Temperaturstufe (fest, nicht berechnet)
+    var MATRIX = [
+      [0, 0, 0],   // aus
+      [1, 1, 0],   // klein
+      [2, 1, 1],   // mittel
+      [3, 2, 1]    // groß
+    ];
+
+    var DICKE_PX   = [3, 6.5, 11];
+    var STROM_HELL = [0, 0.4, 0.7, 1];
+    var TEMP_FARBE = [[138,144,162], [171,128,126], [168,32,21], [255,180,41]];
+    var ANSTIEG_MS = 1500;
+
+    var strom = 0, dicke = 0;
+    var T = 0;                 // angezeigte Temperatur, gleitend 0..3
+    var gesehen = {};
+    var lauf = null;
+
+    var el = {
+      draht:  $('dDraht'),  schein: $('dSchein'), kern: $('dKern'),
+      arm:    $('dArm'),    decke:  $('dDecke'),
+      drahtText: $('dDrahtText'), stromText: $('dStromText'),
+      woerter: $('dWoerter').getElementsByTagName('span'),
+      leitungen: document.querySelectorAll('.dLeitung'),
+      tabelle: $('dTabelle')
+    };
+
+    function tempFarbe(t) {
+      var i = Math.min(Math.floor(t), 2);
+      return mische(TEMP_FARBE[i], TEMP_FARBE[i + 1], begrenze(t - i, 0, 1));
+    }
+
+    function zeichneTemperatur() {
+      var gluehen = begrenze((T - 2.3) / 0.7, 0, 1);
+      el.draht.setAttribute('stroke', tempFarbe(T));
+      el.schein.setAttribute('opacity', (gluehen * 0.95).toFixed(3));
+      el.kern.setAttribute('opacity', gluehen.toFixed(3));
+      el.decke.style.height = ((1 - (T + 1) / 4) * 100).toFixed(1) + '%';
+      var stufe = Math.round(T);
+      for (var i = 0; i < 4; i++) {
+        el.woerter[i].className = (3 - i === stufe) ? 'aktiv' : '';
+      }
+    }
+
+    function zeichneTabelle() {
+      var html = '';
+      for (var s = 0; s < 4; s++) {
+        for (var d = 0; d < 3; d++) {
+          var aktuell = (s === strom && d === dicke);
+          var offen = !gesehen[s + '-' + d];
+          var stufe = MATRIX[s][d];
+          html += '<tr class="' + (aktuell ? 'current-row ' : '') + (offen ? 'locked' : '') + '">' +
+            '<td><span class="row-indicator"></span>' + STROM[s] + '</td>' +
+            '<td>' + DICKE[d] + '</td>';
+          if (offen) {
+            html += zelleOffen(aktuell) + zelleOffen(aktuell);
+          } else {
+            html += '<td><span class="temp-zelle"><span class="temp-punkt" style="background:' +
+              tempFarbe(stufe) + (stufe === 3 ? ';box-shadow:0 0 8px rgba(255,180,41,0.7)' : '') +
+              '"></span>' + TEMP[stufe] + '</span></td>' +
+              '<td>' + (stufe === 3 ? '<span class="ja">ja</span>' : 'nein') + '</td>';
+          }
+          html += '</tr>';
+        }
+      }
+      el.tabelle.innerHTML = html;
+    }
+
+    function zeichneAufbau() {
+      markStrom(strom);
+      markDicke(dicke);
+      var w = DICKE_PX[dicke];
+      el.draht.setAttribute('stroke-width', w);
+      el.schein.setAttribute('stroke-width', w + 16);
+      el.kern.setAttribute('stroke-width', Math.max(1.2, w * 0.4));
+      el.drahtText.textContent = 'DRAHTSTÜCK · ' + DICKE[dicke].toUpperCase();
+      el.stromText.textContent = 'Stromstärke: ' + STROM[strom];
+      if (strom === 0) el.arm.setAttribute('transform', 'rotate(-30 90 220)');
+      else el.arm.removeAttribute('transform');
+      var farbe = mische(LEITUNG_AUS, LEITUNG_AN, STROM_HELL[strom]);
+      for (var i = 0; i < el.leitungen.length; i++) el.leitungen[i].setAttribute('stroke', farbe);
+    }
+
+    // Die Zeile füllt sich erst, wenn die Temperatur angekommen ist –
+    // vorher gäbe es noch nichts zu beobachten.
+    function stelleEin(sofort) {
+      zeichneAufbau();
+      if (lauf) { lauf.stopp(); lauf = null; }
+      var ziel = MATRIX[strom][dicke], von = T;
+      var schluessel = strom + '-' + dicke;
+
+      if (sofort || Math.abs(ziel - von) < 0.01) {
+        T = ziel;
+        zeichneTemperatur();
+        gesehen[schluessel] = true;
+        zeichneTabelle();
+        return;
+      }
+
+      zeichneTabelle();
+      lauf = bewege(ANSTIEG_MS, function (p) {
+        var q = 1 - (1 - p) * (1 - p);        // anfangs schnell, dann langsamer
+        T = von + (ziel - von) * q;
+        zeichneTemperatur();
+      }, function () {
+        lauf = null;
+        T = ziel;
+        gesehen[schluessel] = true;
+        zeichneTabelle();
+      });
+    }
+
+    var markStrom = baueTasten('dStromTasten', STROM, function (i) {
+      if (i === strom) return;
+      strom = i; stelleEin(false);
+    });
+    var markDicke = baueTasten('dDickeTasten', DICKE, function (i) {
+      if (i === dicke) return;
+      dicke = i; stelleEin(false);
+    });
+
+    $('dReset').addEventListener('click', function () {
+      strom = 0; dicke = 0;
+      gesehen = {};                    // auch die Tabelle beginnt wieder leer
+      stelleEin(true);
+    });
+
+    stelleEin(true);
+  })();
+
+  /* =====================================================================
+     MODUL 2 · KOMPASS
+     Blick von oben, Norden ist oben. Der Draht verläuft in Nord-Süd-Richtung
+     über dem Kompass, also parallel zur ruhenden Nadel. Fließt der Strom im
+     Draht nach Norden, weicht der Nordpol der Nadel darunter nach Westen
+     (im Bild: links) aus; bei umgekehrter Richtung nach Osten (rechts).
+     ===================================================================== */
+  (function () {
+    var STROM    = ['aus', 'klein', 'groß'];
+    var RICHTUNG = ['↑', '↓'];
+    var ABSTAND  = ['nah', 'fern'];
+    var MATERIAL = ['Kupfer', 'Aluminium', 'Eisen'];
+
+    var MAT_FARBE  = ['#c87533', '#c9ced6', '#6b7385'];
+    var AUSSCHLAG  = [[0, 35, 70], [0, 15, 35]];     // [Abstand][Stromstärke] in Grad
+    var KOMPASS_X  = [205, 380];
+    var STROM_HELL = [0, 0.5, 1];
+    var STARK      = ['nicht', 'wenig', 'stark'];
+    var DREH_MS    = 800;
+
+    // Zeilen der Tabelle A (gilt für Abstand nah)
+    var ZEILEN_A = [
+      { s: 0, r: -1 }, { s: 1, r: 0 }, { s: 2, r: 0 }, { s: 1, r: 1 }, { s: 2, r: 1 }
+    ];
+
+    var strom = 0, richtung = 0, abstand = 0, material = 0;
+    var winkel = 0, kompassX = KOMPASS_X[0], batterie = 180;   // gleitende Anzeigegrößen
+    var gesehenA = {}, gesehenB = {};
+    var lauf = null;
+
+    var el = {
+      kompass: $('kKompass'), nadel: $('kNadel'), batterie: $('kBatterie'),
+      draht: $('kDraht'), drahtText: $('kDrahtText'), arm: $('kArm'),
+      pfeile: $('kPfeile'), pfeil: document.querySelectorAll('.kPfeil'),
+      leitungen: document.querySelectorAll('.kLeitung'),
+      tabA: $('kTabelleA'), tabB: $('kTabelleB'), notiz: $('kNotiz')
+    };
+
+    var PFEIL_Y = [52, 243];
+
+    function schluesselA() {
+      if (strom === 0) return 'aus';
+      return abstand === 0 ? (strom + '-' + richtung) : null;
+    }
+    function schluesselB() { return strom === 2 ? String(abstand) : null; }
+
+    function zeichneBewegt() {
+      el.kompass.setAttribute('transform', 'translate(' + kompassX.toFixed(1) + ' 145)');
+      el.nadel.setAttribute('transform', 'rotate(' + winkel.toFixed(2) + ')');
+      el.batterie.setAttribute('transform', 'rotate(' + batterie.toFixed(1) + ' 50 145)');
+    }
+
+    function zeichneTabellen() {
+      var kA = schluesselA(), kB = schluesselB();
+      var html = '';
+      ZEILEN_A.forEach(function (z) {
+        var k = z.s === 0 ? 'aus' : (z.s + '-' + z.r);
+        var aktuell = (k === kA), offen = !gesehenA[k];
+        html += '<tr class="' + (aktuell ? 'current-row ' : '') + (offen ? 'locked' : '') + '">' +
+          '<td><span class="row-indicator"></span>' + STROM[z.s] + '</td>' +
+          '<td class="pfeil-zelle">' + (z.s === 0 ? '' : RICHTUNG[z.r]) + '</td>';
+        if (offen) {
+          html += zelleOffen(aktuell) + zelleOffen(aktuell) + zelleOffen(aktuell);
+        } else {
+          html += '<td>' + (z.s === 0 ? 'nein' : 'ja') + '</td>' +
+            '<td>' + (z.s === 0 ? 'bleibt bei N' : (z.r === 0 ? 'links' : 'rechts')) + '</td>' +
+            '<td>' + STARK[z.s] + '</td>';
+        }
+        html += '</tr>';
+      });
+      el.tabA.innerHTML = html;
+
+      html = '';
+      for (var a = 0; a < 2; a++) {
+        var aktuell = (String(a) === kB), offen = !gesehenB[a];
+        html += '<tr class="' + (aktuell ? 'current-row ' : '') + (offen ? 'locked' : '') + '">' +
+          '<td><span class="row-indicator"></span>' + ABSTAND[a] + '</td>' +
+          (offen ? zelleOffen(aktuell) : '<td>' + (a === 0 ? 'stark' : 'wenig') + '</td>') +
+          '</tr>';
+      }
+      el.tabB.innerHTML = html;
+
+      el.notiz.hidden = !(kA === null && kB === null);
+    }
+
+    function zeichneAufbau() {
+      markStrom(strom); markRichtung(richtung); markAbstand(abstand); markMaterial(material);
+      // Material ändert nur Farbe und Beschriftung – die Nadel reagiert bei allen gleich.
+      el.draht.setAttribute('stroke', MAT_FARBE[material]);
+      el.drahtText.textContent = 'DRAHT · ' + MATERIAL[material].toUpperCase();
+      if (strom === 0) el.arm.setAttribute('transform', 'rotate(-30 85 266)');
+      else el.arm.removeAttribute('transform');
+      var farbe = mische(LEITUNG_AUS, LEITUNG_AN, STROM_HELL[strom]);
+      for (var i = 0; i < el.leitungen.length; i++) el.leitungen[i].setAttribute('stroke', farbe);
+      el.pfeile.setAttribute('opacity', strom === 0 ? '0' : (strom === 1 ? '0.6' : '1'));
+      for (var j = 0; j < el.pfeil.length; j++) {
+        el.pfeil[j].setAttribute('transform',
+          'translate(170 ' + PFEIL_Y[j] + ')' + (richtung === 1 ? ' rotate(180)' : ''));
+      }
+    }
+
+    function merke(kA, kB) {
+      if (kA !== null) gesehenA[kA] = true;
+      if (kB !== null) gesehenB[kB] = true;
+    }
+
+    function stelleEin(sofort) {
+      zeichneAufbau();
+      if (lauf) { lauf.stopp(); lauf = null; }
+
+      var zielW = AUSSCHLAG[abstand][strom] * (richtung === 0 ? -1 : 1);
+      var zielX = KOMPASS_X[abstand];
+      var zielB = richtung === 0 ? 180 : 0;
+      var vonW = winkel, vonX = kompassX, vonB = batterie;
+      var kA = schluesselA(), kB = schluesselB();
+
+      var ruhig = Math.abs(zielW - vonW) < 0.05 && Math.abs(zielX - vonX) < 0.05 &&
+                  Math.abs(zielB - vonB) < 0.05;
+      if (sofort || ruhig) {
+        winkel = zielW; kompassX = zielX; batterie = zielB;
+        zeichneBewegt();
+        merke(kA, kB);
+        zeichneTabellen();
+        return;
+      }
+
+      zeichneTabellen();
+      lauf = bewege(DREH_MS, function (p) {
+        var m = p - 1;
+        var schwung = 1 + 2.4 * m * m * m + 1.4 * m * m;       // leichtes Überschwingen der Nadel
+        var weich = p < 0.5 ? 2 * p * p : 1 - 2 * (1 - p) * (1 - p);
+        winkel   = vonW + (zielW - vonW) * schwung;
+        kompassX = vonX + (zielX - vonX) * weich;
+        batterie = vonB + (zielB - vonB) * weich;
+        zeichneBewegt();
+      }, function () {
+        lauf = null;
+        merke(kA, kB);
+        zeichneTabellen();
+      });
+    }
+
+    var markStrom = baueTasten('kStromTasten', STROM, function (i) {
+      if (i === strom) return;
+      strom = i; stelleEin(false);
+    });
+    var markRichtung = baueTasten('kRichtTasten', RICHTUNG, function (i) {
+      if (i === richtung) return;
+      richtung = i; stelleEin(false);
+    }, { pfeil: true, ansage: ['Strom fließt im Draht nach oben', 'Strom fließt im Draht nach unten'] });
+    var markAbstand = baueTasten('kAbstandTasten', ABSTAND, function (i) {
+      if (i === abstand) return;
+      abstand = i; stelleEin(false);
+    });
+    var markMaterial = baueTasten('kMaterialTasten', MATERIAL, function (i) {
+      if (i === material) return;
+      material = i; stelleEin(false);
+    });
+
+    $('kReset').addEventListener('click', function () {
+      strom = 0; richtung = 0; abstand = 0; material = 0;
+      gesehenA = {}; gesehenB = {};
+      stelleEin(true);
+    });
+
+    stelleEin(true);
+  })();
+
+  /* =====================================================================
+     MODUL 3 · SPULE
+     ===================================================================== */
+  (function () {
+    var SVG_NS    = 'http://www.w3.org/2000/svg';
+    var STROM     = ['aus', 'an'];
+    var WINDUNGEN = [1, 5, 20];
+    var KERN      = ['ohne', 'mit'];
+
+    // Vorgabe: angehobene Klammern [Eisenkern][Windungen] bei Strom an
+    var ANGEHOBEN = [[0, 1, 2], [1, 3, 6]];
+
+    var STAB = [
+      { fill: '#a39a8c', stroke: '#6d665b', text: 'HOLZSTAB' },
+      { fill: '#3a4054', stroke: '#9aa3c0', text: 'EISENKERN' }
+    ];
+
+    var SPULE_MITTE = 115, GANGHOEHE = 7, X_LINKS = 281, X_RECHTS = 319, X_MITTE = 300;
+    var SPRUNG_MS = 380, VERSATZ_MS = 70;
+
+    // Lage jeder Klammer: [x, y, Drehung] – auf dem Tisch und an der Spule
+    var AM_TISCH = [[285,294,-4], [256,296,-7], [314,295,-10], [270,286,9], [299,287,-8], [284,279,3]];
+    var AM_STAB  = [[300,209,90], [294,209,116], [306,209,64], [300,239,78], [280.8,236,98], [319.2,236,82]];
+
+    var strom = 0, wind = 0, kern = 0;
+    var lage = [0, 0, 0, 0, 0, 0];      // je Klammer: 0 = Tisch … 1 = an der Spule
+    var gesehen = {};
+    var lauf = null;
+
+    var el = {
+      hinten: $('sHinten'), vorn: $('sVorn'), stab: $('sStab'),
+      zuOben: $('sZuOben'), zuUnten: $('sZuUnten'), arm: $('sArm'),
+      spuleText: $('sSpuleText'), stabText: $('sStabText'),
+      leitungen: document.querySelectorAll('.sLeitung'),
+      tabelle: $('sTabelle')
+    };
+
+    var klammern = [];
+    (function () {
+      var g = $('sKlammern');
+      for (var i = 0; i < 6; i++) {
+        var p = document.createElementNS(SVG_NS, 'path');
+        p.setAttribute('d', 'M3,-4 H25 a4,4 0 0 1 0,8 H7 a2.6,2.6 0 0 1 0,-5.2 H22');
+        p.setAttribute('fill', 'none');
+        p.setAttribute('stroke', '#c3cae0');
+        p.setAttribute('stroke-width', '1.7');
+        p.setAttribute('stroke-linecap', 'round');
+        g.appendChild(p);
+        klammern.push(p);
+      }
+    })();
+
+    function anzahl() { return strom === 1 ? ANGEHOBEN[kern][wind] : 0; }
+    function schluessel() { return strom === 0 ? 'aus' : (kern + '-' + wind); }
+
+    function zeichneKlammern() {
+      for (var i = 0; i < 6; i++) {
+        var a = AM_TISCH[i], b = AM_STAB[i], t = lage[i];
+        klammern[i].setAttribute('transform',
+          'translate(' + (a[0] + (b[0] - a[0]) * t).toFixed(1) + ' ' +
+                         (a[1] + (b[1] - a[1]) * t).toFixed(1) + ') rotate(' +
+                         (a[2] + (b[2] - a[2]) * t).toFixed(1) + ')');
+      }
+    }
+
+    function zeichneSpule() {
+      var n = WINDUNGEN[wind];
+      var oben = SPULE_MITTE - n * GANGHOEHE / 2;
+      var hinten = '', vorn = '';
+      var farbeVorn = strom === 1 ? '#eaa256' : '#b87333';
+      var farbeHinten = strom === 1 ? '#8a5a2c' : '#6a4423';
+      for (var i = 0; i < n; i++) {
+        var y0 = oben + i * GANGHOEHE, ym = y0 + GANGHOEHE / 2, y1 = y0 + GANGHOEHE;
+        vorn += '<path d="M' + X_LINKS + ',' + y0 + ' Q' + X_MITTE + ',' + (ym + 7) + ' ' + X_RECHTS + ',' + ym +
+          '" fill="none" stroke="' + farbeVorn + '" stroke-width="3" stroke-linecap="round"/>';
+        hinten += '<path d="M' + X_RECHTS + ',' + ym + ' Q' + X_MITTE + ',' + (ym - 7) + ' ' + X_LINKS + ',' + y1 +
+          '" fill="none" stroke="' + farbeHinten + '" stroke-width="3" stroke-linecap="round"/>';
+      }
+      el.vorn.innerHTML = vorn;
+      el.hinten.innerHTML = hinten;
+      el.zuOben.setAttribute('y2', oben);
+      el.zuUnten.setAttribute('y1', oben + n * GANGHOEHE);
+      el.spuleText.textContent = n + (n === 1 ? ' WINDUNG' : ' WINDUNGEN');
+    }
+
+    function zeichneTabelle() {
+      var k = schluessel();
+      function zeile(schl, s, w, e, wert) {
+        var aktuell = (schl === k), offen = !gesehen[schl];
+        return '<tr class="' + (aktuell ? 'current-row ' : '') + (offen ? 'locked' : '') + '">' +
+          '<td><span class="row-indicator"></span>' + s + '</td><td>' + w + '</td><td>' + e + '</td>' +
+          (offen ? zelleOffen(aktuell) : '<td>' + wert + '</td>') + '</tr>';
+      }
+      var html = zeile('aus', 'aus', '', '', 0);
+      for (var e = 0; e < 2; e++) {
+        for (var w = 0; w < 3; w++) {
+          html += zeile(e + '-' + w, 'an', WINDUNGEN[w], KERN[e], ANGEHOBEN[e][w]);
+        }
+      }
+      el.tabelle.innerHTML = html;
+    }
+
+    function zeichneAufbau() {
+      markStrom(strom); markWind(wind); markKern(kern);
+      el.stab.setAttribute('fill', STAB[kern].fill);
+      el.stab.setAttribute('stroke', STAB[kern].stroke);
+      el.stabText.textContent = STAB[kern].text;
+      if (strom === 0) el.arm.setAttribute('transform', 'rotate(-30 135 190)');
+      else el.arm.removeAttribute('transform');
+      var farbe = mische(LEITUNG_AUS, LEITUNG_AN, strom);
+      for (var i = 0; i < el.leitungen.length; i++) el.leitungen[i].setAttribute('stroke', farbe);
+      zeichneSpule();
+    }
+
+    function stelleEin(sofort) {
+      zeichneAufbau();
+      if (lauf) { lauf.stopp(); lauf = null; }
+
+      var n = anzahl(), k = schluessel();
+      var von = lage.slice(), ziel = [], start = [], bewegte = 0;
+      for (var i = 0; i < 6; i++) {
+        ziel[i] = i < n ? 1 : 0;
+        start[i] = -1;
+        if (Math.abs(ziel[i] - von[i]) > 0.001) { start[i] = bewegte * VERSATZ_MS; bewegte++; }
+      }
+
+      if (sofort || bewegte === 0) {
+        lage = ziel;
+        zeichneKlammern();
+        gesehen[k] = true;
+        zeichneTabelle();
+        return;
+      }
+
+      zeichneTabelle();
+      var dauer = SPRUNG_MS + (bewegte - 1) * VERSATZ_MS;
+      lauf = bewege(dauer, function (p) {
+        var jetzt = p * dauer;
+        for (var i = 0; i < 6; i++) {
+          if (start[i] < 0) continue;
+          var t = begrenze((jetzt - start[i]) / SPRUNG_MS, 0, 1);
+          lage[i] = von[i] + (ziel[i] - von[i]) * t * t;       // beschleunigt: Anziehen wie Fallen
+        }
+        zeichneKlammern();
+      }, function () {
+        lauf = null;
+        lage = ziel;
+        zeichneKlammern();
+        gesehen[k] = true;
+        zeichneTabelle();
+      });
+    }
+
+    var markStrom = baueTasten('sStromTasten', STROM, function (i) {
+      if (i === strom) return;
+      strom = i; stelleEin(false);
+    });
+    var markWind = baueTasten('sWindTasten', WINDUNGEN, function (i) {
+      if (i === wind) return;
+      wind = i; stelleEin(false);
+    });
+    var markKern = baueTasten('sKernTasten', KERN, function (i) {
+      if (i === kern) return;
+      kern = i; stelleEin(false);
+    });
+
+    $('sReset').addEventListener('click', function () {
+      strom = 0; wind = 0; kern = 0;
+      gesehen = {};
+      stelleEin(true);
+    });
+
+    stelleEin(true);
+  })();
+
+})();
+</script>
+</body>
+</html>
