@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ein Glühdraht im Teilchenmodell – Physik 10</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d26;
+    --surface2: #242736;
+    --border: #2e3347;
+    --text: #e8eaf0;
+    --muted: #7b82a0;
+    --blue: #4a9eff;
+    --blue-dim: #1e3a5f;
+    --yellow: #f5c842;
+    --yellow-glow: rgba(245,200,66,0.5);
+    --wire: #3a4060;
+    --radius: 12px;
+    --sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --mono: 'DM Mono', ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 16px 32px;
+    gap: 14px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  header { text-align: center; max-width: 620px; }
+
+  .label-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 1px solid var(--blue);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .leitsatz { font-size: 13.5px; color: var(--muted); line-height: 1.4; }
+
+  /* AUFTEILUNG: schmal einspaltig, breit (iPad quer) zweispaltig */
+  .layout {
+    width: 100%;
+    max-width: 620px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .spalte { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+  @media (min-width: 900px) {
+    .layout { max-width: 1060px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  }
+
+  /* KARTEN */
+  .card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 16px 16px;
+  }
+
+  .card-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  svg#circuit { width: 100%; height: auto; display: block; }
+
+  /* ANZEIGEFELDER */
+  .anzeigen {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .anzeige {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 6px 9px;
+    text-align: center;
+  }
+
+  .anzeige-name {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+
+  .anzeige-wert {
+    font-family: var(--mono);
+    font-size: 19px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* TEILCHENANSICHT */
+  canvas#teilchen {
+    width: 100%;
+    display: block;
+    border-radius: 8px;
+    touch-action: pan-y;
+  }
+
+  .legende {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 20px;
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  .legende span { display: inline-flex; align-items: center; gap: 7px; }
+  .legende svg { flex-shrink: 0; }
+
+  /* STEUERUNG */
+  .stufen {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stufe {
+    position: relative;
+    overflow: hidden;
+    min-height: 54px;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
+  }
+
+  .stufe:active { transform: translateY(1px); }
+  @media (hover: hover) { .stufe:hover { border-color: var(--muted); } }
+
+  .stufe.aktiv,
+  .stufe.aktiv:hover {
+    border-color: var(--yellow);
+    background: rgba(245,200,66,0.10);
+    color: var(--yellow);
+  }
+
+  /* Laufbalken: zeigt, dass die Umstellung noch läuft */
+  .stufe .lauf {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 4px;
+    width: 0;
+    background: var(--yellow);
+    opacity: 0.85;
+  }
+
+  .reset-row { display: flex; justify-content: center; margin-top: 14px; }
+
+  .reset {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 12px 26px;
+    min-height: 46px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  }
+
+  .reset:active { transform: translateY(1px); background: var(--blue-dim); border-color: var(--blue); }
+  @media (hover: hover) { .reset:hover { border-color: var(--blue); } }
+
+  /* TABELLE */
+  .table-wrap {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .table-header {
+    padding: 14px 18px 10px;
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    padding: 10px 10px;
+    text-align: center;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    line-height: 1.3;
+  }
+
+  thead th:first-child { text-align: left; padding-left: 18px; }
+
+  tbody tr { transition: background 0.2s; }
+  tbody tr.current-row { background: rgba(245,200,66,0.06); }
+  tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+
+  td { padding: 11px 10px; text-align: center; font-size: 13px; color: var(--text); white-space: nowrap; }
+  td:first-child { text-align: left; padding-left: 18px; font-family: var(--mono); }
+
+  /* Noch nicht abgewartete Stufe: Zeile steht da, ihre Werte nicht. */
+  tbody tr.locked td:first-child { color: var(--muted); }
+  td.offen { color: #5b6180; font-family: var(--mono); font-size: 14px; letter-spacing: 0.1em; }
+
+  .num { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+
+  .row-indicator {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--yellow);
+    margin-right: 8px;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  tbody tr.current-row .row-indicator { opacity: 1; }
+
+  .hint {
+    width: 100%;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 460px) {
+    h1 { font-size: 19px; }
+    .card { padding: 14px 12px; }
+    .stufen { gap: 5px; }
+    .stufe { font-size: 12.5px; border-width: 1.5px; }
+    .anzeige-wert { font-size: 16px; }
+    .anzeige-name { font-size: 10.5px; }
+    td, thead th { padding-left: 6px; padding-right: 6px; }
+    td:first-child, thead th:first-child { padding-left: 10px; }
+    td { font-size: 12px; }
+    .num { font-size: 12.5px; }
+    .row-indicator { margin-right: 5px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="label-tag">Physik · Jahrgang 10</div>
+  <h1>Ein Glühdraht im Teilchenmodell</h1>
+  <p class="leitsatz">🔮 Vermuten–Prüfen</p>
+</header>
+
+<div class="layout">
+
+  <div class="spalte">
+
+    <!-- SCHALTBILD -->
+    <div class="card">
+      <span class="card-label">Schaltbild</span>
+      <svg id="circuit" viewBox="0 0 460 230" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-label="Schaltbild: Glühlampe an einer Spannungsquelle mit 12 Volt, Amperemeter in Reihe">
+        <defs>
+          <radialGradient id="schein" cx="50%" cy="50%" r="50%">
+            <stop id="scheinInnen" offset="0%" stop-color="#8a8fa3" stop-opacity="0.8"/>
+            <stop id="scheinMitte" offset="45%" stop-color="#8a8fa3" stop-opacity="0.35"/>
+            <stop id="scheinAussen" offset="100%" stop-color="#8a8fa3" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+
+        <!-- Lampenschein (hinter allem) -->
+        <circle id="scheinKreis" cx="230" cy="90" r="68" fill="url(#schein)" opacity="0"/>
+
+        <!-- LEITUNG -->
+        <path d="M194,90 H40 V192 H221 M239,192 H420 V90 H266"
+              fill="none" stroke="#3a4060" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+        <!-- SPANNUNGSQUELLE: links Minuspol (kurz, dick), rechts Pluspol (lang, dünn) -->
+        <line x1="221" y1="182" x2="221" y2="202" stroke="#a0a8c8" stroke-width="6"/>
+        <line x1="239" y1="173" x2="239" y2="211" stroke="#a0a8c8" stroke-width="3"/>
+        <text x="205" y="183" text-anchor="middle" font-family="DM Mono, ui-monospace, Menlo, Consolas, monospace" font-size="15" fill="#7b82a0">−</text>
+        <text x="255" y="183" text-anchor="middle" font-family="DM Mono, ui-monospace, Menlo, Consolas, monospace" font-size="15" fill="#7b82a0">+</text>
+        <text x="230" y="161" text-anchor="middle" font-family="DM Sans, system-ui, sans-serif" font-size="16" font-weight="600" fill="#e8eaf0">12 V</text>
+        <text x="230" y="226" text-anchor="middle" font-family="DM Mono, ui-monospace, Menlo, Consolas, monospace" font-size="10" letter-spacing="0.08em" fill="#7b82a0">SPANNUNGSQUELLE</text>
+
+        <!-- AMPEREMETER -->
+        <line x1="388" y1="146" x2="399" y2="146" stroke="#2e3347" stroke-width="2"/>
+        <rect x="296" y="128" width="92" height="36" rx="6" fill="#0f1117" stroke="#2e3347" stroke-width="1.5"/>
+        <text id="ampText" x="342" y="152" text-anchor="middle" font-family="DM Mono, ui-monospace, Menlo, Consolas, monospace" font-size="17" font-weight="500" fill="#e8eaf0">7,5 A</text>
+        <text x="342" y="119" text-anchor="middle" font-family="DM Mono, ui-monospace, Menlo, Consolas, monospace" font-size="10" letter-spacing="0.08em" fill="#7b82a0">AMPEREMETER</text>
+        <circle cx="420" cy="146" r="21" fill="#1a1d26" stroke="#a0a8c8" stroke-width="2.5"/>
+        <text x="420" y="152" text-anchor="middle" font-family="DM Sans, system-ui, sans-serif" font-size="18" font-weight="600" fill="#e8eaf0">A</text>
+
+        <!-- GLÜHLAMPE -->
+        <circle id="glas" cx="230" cy="90" r="36" fill="#141722" stroke="#4a5170" stroke-width="2"/>
+        <circle id="glasToenung" cx="230" cy="90" r="35" fill="#8a8fa3" opacity="0"/>
+        <line x1="194" y1="90" x2="206" y2="90" stroke="#3a4060" stroke-width="4" stroke-linecap="round"/>
+        <line x1="254" y1="90" x2="266" y2="90" stroke="#3a4060" stroke-width="4" stroke-linecap="round"/>
+        <path id="drahtHof" d="M206,90 L210,77 L218,103 L226,77 L234,103 L242,77 L250,103 L254,90"
+              fill="none" stroke="#8a8fa3" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>
+        <path id="draht" d="M206,90 L210,77 L218,103 L226,77 L234,103 L242,77 L250,103 L254,90"
+              fill="none" stroke="#8a8fa3" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="206" cy="90" r="3" fill="#a0a8c8"/>
+        <circle cx="254" cy="90" r="3" fill="#a0a8c8"/>
+
+        <!-- Beschriftungen (außerhalb des Lampenscheins) -->
+        <text x="230" y="13" text-anchor="middle" font-family="DM Mono, ui-monospace, Menlo, Consolas, monospace" font-size="10" letter-spacing="0.08em" fill="#7b82a0">GLÜHLAMPE</text>
+        <line x1="316" y1="40" x2="251" y2="80" stroke="#7b82a0" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="320" y="39" text-anchor="start" font-family="DM Mono, ui-monospace, Menlo, Consolas, monospace" font-size="10" letter-spacing="0.08em" fill="#7b82a0">GLÜHDRAHT</text>
+      </svg>
+
+      <div class="anzeigen">
+        <div class="anzeige">
+          <span class="anzeige-name">Drahttemperatur</span>
+          <span class="anzeige-wert" id="outT">20 °C</span>
+        </div>
+        <div class="anzeige">
+          <span class="anzeige-name">Widerstand R des Drahts</span>
+          <span class="anzeige-wert" id="outR">1,6 Ω</span>
+        </div>
+        <div class="anzeige">
+          <span class="anzeige-name">Stromstärke I</span>
+          <span class="anzeige-wert" id="outI">7,5 A</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEILCHENANSICHT -->
+    <div class="card">
+      <span class="card-label">Blick in den Glühdraht · stark vergrößert</span>
+      <canvas id="teilchen" width="580" height="240" role="img"
+              aria-label="Ausschnitt des Glühdrahts im Teilchenmodell: Gitter aus Atomrümpfen, dazwischen Elektronen, die von links nach rechts wandern"></canvas>
+      <div class="legende">
+        <span>
+          <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+            <circle cx="11" cy="11" r="9.5" fill="#262b44" stroke="#5b6590" stroke-width="1.5"/>
+            <path d="M6.5,11 H15.5 M11,6.5 V15.5" stroke="#c9cfe6" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          Atomrumpf
+        </span>
+        <span>
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <circle cx="7" cy="7" r="6" fill="#4a9eff"/>
+            <path d="M4,7 H10" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          Elektron
+        </span>
+        <span>
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <circle cx="9" cy="9" r="7.5" fill="none" stroke="#fff3b0" stroke-width="1.5" opacity="0.7"/>
+            <circle cx="9" cy="9" r="3.5" fill="#fff3b0"/>
+          </svg>
+          Stoß
+        </span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="spalte">
+
+    <!-- STEUERUNG -->
+    <div class="card">
+      <span class="card-label">Drahttemperatur einstellen</span>
+      <div class="stufen" id="stufen" role="group" aria-label="Drahttemperatur"></div>
+      <div class="reset-row">
+        <button class="reset" type="button" id="btnReset">Zurücksetzen</button>
+      </div>
+    </div>
+
+    <!-- BEOBACHTUNGSTABELLE -->
+    <div class="table-wrap">
+      <div class="table-header">Beobachtungstabelle</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Draht&shy;temperatur</th>
+            <th>Stöße der<br>Elektronen</th>
+            <th>Widerstand R</th>
+            <th>Stromstärke I</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <p class="hint">Tippe eine Temperatur an und beobachte Draht, Teilchen und Messgeräte.</p>
+
+  </div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Feste Werte (Wolfram, U = 12 V) ----------
+     Werden nicht berechnet, sondern genau so angezeigt. */
+  var STUFEN = [
+    { t:   20, stoesse: 'sehr wenige', r:  1.6, i: 7.5,  rTxt: '1,6', iTxt: '7,5',  amp:  0.4, farbe: [138, 143, 163], schein: 0    },
+    { t:  500, stoesse: 'wenige',      r:  5.2, i: 2.3,  rTxt: '5,2', iTxt: '2,3',  amp:  3.0, farbe: [134,  38,  30], schein: 0    },
+    { t: 1000, stoesse: 'mittel',      r:  9.5, i: 1.3,  rTxt: '9,5', iTxt: '1,3',  amp:  5.5, farbe: [226,  58,  42], schein: 0.40 },
+    { t: 1500, stoesse: 'viele',       r: 14,   i: 0.85, rTxt: '14',  iTxt: '0,85', amp:  8.0, farbe: [255, 150,  46], schein: 0.68 },
+    { t: 2500, stoesse: 'sehr viele',  r: 24,   i: 0.50, rTxt: '24',  iTxt: '0,50', amp: 10.5, farbe: [255, 244, 190], schein: 1    }
+  ];
+  var DAUER = 1.5;          // Sekunden für die Umstellung auf eine neue Stufe
+  var NBSP  = ' ';
+
+  /* ---------- Zustand ---------- */
+  var stufe       = 0;      // eingestellte Stufe
+  var laufend     = false;  // Umstellung läuft noch
+  var fortschritt = 0;      // 0 … 1
+  var von         = null;   // Anzeigezustand beim Antippen
+  var akt         = zustandVon(STUFEN[0]);
+  // Der Ausgangszustand (20 °C) ist von Anfang an eingestellt und steht
+  // deshalb in der Tabelle; er verrät noch keine Richtung der Veränderung.
+  var gesehen     = [true, false, false, false, false];
+
+  function zustandVon(s) {
+    return { t: s.t, r: s.r, i: s.i, amp: s.amp, schein: s.schein,
+             farbe: [s.farbe[0], s.farbe[1], s.farbe[2]] };
+  }
+
+  function mix(a, b, p) { return a + (b - a) * p; }
+
+  function weich(p) { return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; }
+
+  function rgb(f) {
+    return 'rgb(' + Math.round(f[0]) + ',' + Math.round(f[1]) + ',' + Math.round(f[2]) + ')';
+  }
+
+  function rgba(f, a) {
+    return 'rgba(' + Math.round(f[0]) + ',' + Math.round(f[1]) + ',' + Math.round(f[2]) + ',' + a.toFixed(3) + ')';
+  }
+
+  function mischFarbe(a, b, p) { return [mix(a[0], b[0], p), mix(a[1], b[1], p), mix(a[2], b[2], p)]; }
+
+  function komma(zahl, stellen) { return zahl.toFixed(stellen).replace('.', ','); }
+
+  /* ---------- Elemente ---------- */
+  var el = {
+    stufen:  document.getElementById('stufen'),
+    body:    document.getElementById('tableBody'),
+    outT:    document.getElementById('outT'),
+    outR:    document.getElementById('outR'),
+    outI:    document.getElementById('outI'),
+    amp:     document.getElementById('ampText'),
+    draht:   document.getElementById('draht'),
+    hof:     document.getElementById('drahtHof'),
+    toenung: document.getElementById('glasToenung'),
+    kreis:   document.getElementById('scheinKreis'),
+    stops:   [document.getElementById('scheinInnen'),
+              document.getElementById('scheinMitte'),
+              document.getElementById('scheinAussen')],
+    canvas:  document.getElementById('teilchen')
+  };
+
+  /* ---------- Tasten ---------- */
+  var tasten = [], balken = [];
+  STUFEN.forEach(function (s, idx) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'stufe';
+    b.textContent = s.t + NBSP + '°C';
+    var l = document.createElement('span');
+    l.className = 'lauf';
+    b.appendChild(l);
+    b.addEventListener('click', function () { waehle(idx); });
+    el.stufen.appendChild(b);
+    tasten.push(b);
+    balken.push(l);
+  });
+
+  function zeichneTasten() {
+    for (var k = 0; k < tasten.length; k++) {
+      var aktiv = (k === stufe);
+      tasten[k].className = 'stufe' + (aktiv ? ' aktiv' : '');
+      tasten[k].setAttribute('aria-pressed', aktiv ? 'true' : 'false');
+      balken[k].style.width = (aktiv && laufend) ? (fortschritt * 100).toFixed(1) + '%' : '0';
+    }
+  }
+
+  /* ---------- Beobachtungstabelle ----------
+     Alle fünf Zeilen stehen da. Die Werte einer Zeile erscheinen erst, wenn
+     genau diese Stufe eingestellt war UND die Umstellung abgelaufen ist.
+     Wer vorher weiterschaltet, lässt die Zeile leer. Nur der Ausgangszustand
+     (20 °C) ist von Beginn an eingetragen. */
+  function zeichneTabelle() {
+    el.body.innerHTML = '';
+    STUFEN.forEach(function (s, idx) {
+      var tr = document.createElement('tr');
+      var klasse = (idx === stufe ? 'current-row' : '');
+      if (!gesehen[idx]) klasse += (klasse ? ' ' : '') + 'locked';
+      tr.className = klasse;
+      tr.innerHTML =
+        '<td><span class="row-indicator"></span>' + s.t + NBSP + '°C</td>' +
+        (gesehen[idx]
+          ? '<td>' + s.stoesse + '</td>' +
+            '<td class="num">' + s.rTxt + NBSP + 'Ω</td>' +
+            '<td class="num">' + s.iTxt + NBSP + 'A</td>'
+          : '<td class="offen">…</td><td class="offen">…</td><td class="offen">…</td>');
+      el.body.appendChild(tr);
+    });
+  }
+
+  /* ---------- Schaltbild und Anzeigefelder ---------- */
+  function zeichneAnzeigen() {
+    var ziel = STUFEN[stufe];
+    var tTxt, rTxt, iTxt;
+    if (laufend) {
+      tTxt = String(Math.round(akt.t / 10) * 10);
+      rTxt = akt.r < 9.95 ? komma(akt.r, 1) : String(Math.round(akt.r));
+      iTxt = akt.i < 0.995 ? komma(akt.i, 2) : komma(akt.i, 1);
+    } else {
+      tTxt = String(ziel.t); rTxt = ziel.rTxt; iTxt = ziel.iTxt;
+    }
+    el.outT.textContent = tTxt + NBSP + '°C';
+    el.outR.textContent = rTxt + NBSP + 'Ω';
+    el.outI.textContent = iTxt + NBSP + 'A';
+    el.amp.textContent  = iTxt + NBSP + 'A';
+
+    var farbe = rgb(akt.farbe);
+    el.draht.setAttribute('stroke', farbe);
+    el.hof.setAttribute('stroke', farbe);
+    el.hof.setAttribute('opacity', (0.45 * akt.schein).toFixed(3));
+    el.toenung.setAttribute('fill', farbe);
+    el.toenung.setAttribute('opacity', (0.22 * akt.schein).toFixed(3));
+    for (var k = 0; k < el.stops.length; k++) el.stops[k].setAttribute('stop-color', farbe);
+    el.kreis.setAttribute('opacity', akt.schein.toFixed(3));
+  }
+
+  /* ---------- Bedienung ---------- */
+  function waehle(idx) {
+    stufe = idx;
+    von = zustandVon({ t: akt.t, r: akt.r, i: akt.i, amp: akt.amp, schein: akt.schein, farbe: akt.farbe });
+    fortschritt = 0;
+    laufend = true;
+    zeichneTasten();
+    zeichneTabelle();
+  }
+
+  document.getElementById('btnReset').addEventListener('click', function () {
+    stufe = 0;
+    laufend = false;
+    fortschritt = 0;
+    akt = zustandVon(STUFEN[0]);
+    gesehen = [true, false, false, false, false];    // Tabelle beginnt wieder leer (bis auf den Ausgangszustand)
+    zeichneTasten();
+    zeichneTabelle();
+    zeichneAnzeigen();
+  });
+
+  function umstellung(dt) {
+    if (!laufend) return;
+    var ziel = STUFEN[stufe];
+    fortschritt += dt / DAUER;
+    if (fortschritt >= 1) {
+      fortschritt = 1;
+      laufend = false;
+      akt = zustandVon(ziel);
+      gesehen[stufe] = true;
+      zeichneTabelle();
+    } else {
+      var p = weich(fortschritt);
+      akt.t      = mix(von.t, ziel.t, p);
+      akt.r      = mix(von.r, ziel.r, p);
+      akt.amp    = mix(von.amp, ziel.amp, p);
+      akt.schein = mix(von.schein, ziel.schein, p);
+      akt.farbe  = mischFarbe(von.farbe, ziel.farbe, p);
+      akt.i      = 12 / akt.r;   // unterwegs passend zu R; am Ende gilt der feste Tabellenwert
+    }
+    zeichneTasten();
+    zeichneAnzeigen();
+  }
+
+  /* =====================================================================
+     TEILCHENANSICHT
+     Atomrümpfe schwingen um ihre Ruhelage (Schwingungsweite = akt.amp).
+     Elektronen werden gleichmäßig nach rechts beschleunigt; berühren sie
+     einen Atomrumpf, werden sie abgelenkt und abgebremst. Stoßhäufigkeit
+     und Nettodrift ergeben sich daraus von selbst.
+     ===================================================================== */
+  var W = 580, H = 240;
+  var SPALTEN = 8, ZEILEN = 5, DX = 72, DY = 46, X0 = 38, Y0 = 28;
+  var R_ION = 12, R_EL = 4, N_EL = 28;
+  var BESCHL = 60, V_MAX = 170, DAEMPF = 1.5, ZITTERN = 3, VERLUST = 0.2, OMEGA = 13;
+  var AMP_MIN = STUFEN[0].amp, AMP_MAX = STUFEN[STUFEN.length - 1].amp;
+
+  var ionen = [], elektronen = [], blitze = [];
+  var uhr = 0;
+
+  function zufall() { return Math.random(); }
+  function gauss() { return (zufall() + zufall() + zufall() + zufall() - 2) * 1.73; }
+
+  (function () {
+    var i, j;
+    for (j = 0; j < ZEILEN; j++) {
+      for (i = 0; i < SPALTEN; i++) {
+        ionen.push({
+          x0: X0 + i * DX, y0: Y0 + j * DY, x: X0 + i * DX, y: Y0 + j * DY,
+          p1: zufall() * 6.283, p2: zufall() * 6.283, p3: zufall() * 6.283, p4: zufall() * 6.283,
+          f: 0.85 + zufall() * 0.3, blitz: 0
+        });
+      }
+    }
+    for (i = 0; i < N_EL; i++) {
+      var gasse = i % (ZEILEN - 1);   // Start in den Gassen zwischen den Reihen
+      elektronen.push({
+        x: (i + zufall()) * W / N_EL,
+        y: Y0 + DY / 2 + gasse * DY + (zufall() - 0.5) * 4,
+        vx: 120 + zufall() * 40, vy: 0, ruhe: 0
+      });
+    }
+  })();
+
+  function bewege(dt) {
+    uhr += dt;
+    var amp = akt.amp, k, n;
+
+    for (k = 0; k < ionen.length; k++) {
+      n = ionen[k];
+      var w = OMEGA * n.f;
+      n.x = n.x0 + amp * (0.7 * Math.sin(w * uhr + n.p1) + 0.3 * Math.sin(1.7 * w * uhr + n.p2));
+      n.y = n.y0 + amp * (0.7 * Math.sin(1.1 * w * uhr + n.p3) + 0.3 * Math.sin(1.9 * w * uhr + n.p4));
+      if (n.blitz > 0) n.blitz -= dt;
+    }
+
+    var rr = R_ION + R_EL, wurzelDt = Math.sqrt(dt), abkling = Math.exp(-DAEMPF * dt);
+    for (var m = 0; m < elektronen.length; m++) {
+      var e = elektronen[m];
+      e.vx += BESCHL * dt;
+      e.vy = e.vy * abkling + gauss() * ZITTERN * wurzelDt;
+      var v = Math.sqrt(e.vx * e.vx + e.vy * e.vy);
+      if (v > V_MAX) { e.vx *= V_MAX / v; e.vy *= V_MAX / v; }
+      e.x += e.vx * dt;
+      e.y += e.vy * dt;
+      e.ruhe -= dt;
+
+      if (e.y < R_EL)     { e.y = R_EL;     e.vy =  Math.abs(e.vy); }
+      if (e.y > H - R_EL) { e.y = H - R_EL; e.vy = -Math.abs(e.vy); }
+
+      for (k = 0; k < ionen.length; k++) {
+        n = ionen[k];
+        var dx = e.x - n.x, dy = e.y - n.y, d2 = dx * dx + dy * dy;
+        if (d2 >= rr * rr) continue;
+
+        var d = Math.sqrt(d2) || 0.01, nx = dx / d, ny = dy / d;
+        e.x = n.x + nx * rr;
+        e.y = n.y + ny * rr;
+        var vn = e.vx * nx + e.vy * ny;
+        if (vn < 0) {
+          // abgelenkt und abgebremst
+          e.vx -= 2 * vn * nx;
+          e.vy -= 2 * vn * ny;
+          var tempo = Math.sqrt(e.vx * e.vx + e.vy * e.vy);
+          var neu = Math.max(25, tempo * VERLUST);
+          var winkel = Math.atan2(e.vy, e.vx) + (zufall() - 0.5);
+          e.vx = Math.cos(winkel) * neu;
+          e.vy = Math.sin(winkel) * neu;
+          if (e.vx * nx + e.vy * ny < 0) { e.vx = nx * neu; e.vy = ny * neu; }
+        } else {
+          // der schwingende Atomrumpf hat das Elektron angestoßen
+          e.vx += nx * 40;
+          e.vy += ny * 40;
+        }
+        if (e.ruhe <= 0) {
+          e.ruhe = 0.18;
+          n.blitz = 0.22;
+          blitze.push({ x: n.x + nx * R_ION, y: n.y + ny * R_ION, alter: 0 });
+        }
+      }
+
+      if (e.x > W + 6) e.x -= W + 12;
+      if (e.x < -6) { e.x = -6; e.vx = Math.abs(e.vx); }
+    }
+
+    for (k = blitze.length - 1; k >= 0; k--) {
+      blitze[k].alter += dt;
+      if (blitze[k].alter > 0.3) blitze.splice(k, 1);
+    }
+  }
+
+  /* ---------- Zeichnen ---------- */
+  var ctx = el.canvas.getContext('2d');
+  var massstab = 1, letzteBreite = 0;
+
+  function passeAn() {
+    var breite = el.canvas.clientWidth;
+    if (!breite || breite === letzteBreite) return;
+    letzteBreite = breite;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    el.canvas.style.height = Math.round(breite * H / W) + 'px';
+    el.canvas.width  = Math.round(breite * dpr);
+    el.canvas.height = Math.round(breite * H / W * dpr);
+    massstab = el.canvas.width / W;
+  }
+
+  var ION_RAND = [91, 101, 144], ION_FLAECHE = [38, 43, 68], ION_HELL = [255, 243, 176];
+  var DRAHT_GRUND = [20, 23, 34], DRAHT_RAND = [46, 51, 71];
+
+  function male() {
+    passeAn();
+    ctx.setTransform(massstab, 0, 0, massstab, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    var waerme = Math.max(0, Math.min(1, (akt.amp - AMP_MIN) / (AMP_MAX - AMP_MIN)));
+    var k;
+
+    // Drahtstück: Grund leicht in der Farbe des Glühdrahts getönt
+    ctx.fillStyle = rgb(DRAHT_GRUND);
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = rgba(akt.farbe, 0.04 + 0.10 * akt.schein);
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = rgb(mischFarbe(DRAHT_RAND, akt.farbe, 0.25 + 0.5 * waerme));
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0, 1.5); ctx.lineTo(W, 1.5);
+    ctx.moveTo(0, H - 1.5); ctx.lineTo(W, H - 1.5); ctx.stroke();
+
+    // Atomrümpfe
+    var rand = rgb(mischFarbe(ION_RAND, akt.farbe, 0.55 * waerme));
+    for (k = 0; k < ionen.length; k++) {
+      var n = ionen[k];
+      var hell = n.blitz > 0 ? n.blitz / 0.22 : 0;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, R_ION, 0, 6.2832);
+      ctx.fillStyle = rgb(mischFarbe(ION_FLAECHE, ION_HELL, 0.45 * hell));
+      ctx.fill();
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = rand;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(n.x - 5, n.y); ctx.lineTo(n.x + 5, n.y);
+      ctx.moveTo(n.x, n.y - 5); ctx.lineTo(n.x, n.y + 5);
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#c9cfe6';
+      ctx.stroke();
+    }
+
+    // Elektronen
+    for (k = 0; k < elektronen.length; k++) {
+      var e = elektronen[k];
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, R_EL, 0, 6.2832);
+      ctx.fillStyle = '#4a9eff';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(e.x - 2.2, e.y); ctx.lineTo(e.x + 2.2, e.y);
+      ctx.lineWidth = 1.3;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+    }
+
+    // Stöße blitzen kurz auf
+    for (k = 0; k < blitze.length; k++) {
+      var b = blitze[k], p = b.alter / 0.3;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 3 + 11 * p, 0, 6.2832);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,243,176,' + (0.9 * (1 - p)).toFixed(3) + ')';
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 4.5 * (1 - p), 0, 6.2832);
+      ctx.fillStyle = 'rgba(255,250,225,' + (1 - p).toFixed(3) + ')';
+      ctx.fill();
+    }
+  }
+
+  /* ---------- Ablauf ---------- */
+  var letzte = null;
+
+  function schritt(zeit) {
+    if (letzte === null) letzte = zeit;
+    var echt = (zeit - letzte) / 1000;
+    letzte = zeit;
+
+    // Die Umstellung läuft nach der Uhr (ca. 1,5 s, auch bei niedriger Bildrate) …
+    umstellung(Math.min(echt, 1));
+
+    // … die Teilchen rechnen in festen kleinen Schritten, damit kein Elektron
+    // durch einen Atomrumpf hindurchspringt.
+    var rest = Math.min(echt, 0.1);
+    while (rest > 0.0001) {
+      var dt = Math.min(rest, 1 / 60);
+      bewege(dt);
+      rest -= dt;
+    }
+
+    male();
+    requestAnimationFrame(schritt);
+  }
+
+  zeichneTasten();
+  zeichneTabelle();
+  zeichneAnzeigen();
+  male();
+  requestAnimationFrame(schritt);
+
+  window.addEventListener('resize', passeAn);
+  window.addEventListener('orientationchange', function () { letzteBreite = 0; });
+
+  // Nach einem Tab- oder App-Wechsel läuft requestAnimationFrame nicht weiter;
+  // beim Zurückkommen die Zeitbasis neu setzen, damit nichts springt.
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) letzte = null;
+  });
+})();
+</script>
+</body>
+</html>
