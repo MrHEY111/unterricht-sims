@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kathodenstrahlröhre – Chemie</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d26;
+    --surface2: #242736;
+    --border: #2e3347;
+    --text: #e8eaf0;
+    --muted: #7b82a0;
+    --blue: #4a9eff;
+    --blue-dim: #1e3a5f;
+    --yellow: #f5c842;
+    --red: #e74c3c;
+    --green: #2ecc71;
+    --wire-off: #3a4060;
+    --wire-on: #f5c842;
+    --plus: #e74c3c;
+    --minus: #4a9eff;
+    --strahl: #7fd8ff;
+    --fleck: #9dff9a;
+    --vergleich: #ff9f43;
+    --radius: 12px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 12px 16px 40px;
+  }
+
+  button, input { font: inherit; color: inherit; touch-action: manipulation; }
+
+  .seite {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* KOPF */
+  .kopf { text-align: center; }
+
+  .label-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 1px solid var(--blue);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+
+  h1 { font-size: 21px; font-weight: 600; line-height: 1.25; }
+  .subtitle { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+
+  .hint {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-top: 4px;
+  }
+
+  /* SIM-FLÄCHE: auf dem iPad quer zweispaltig */
+  .sim {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  @media (min-width: 860px) {
+    .sim { grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr); align-items: start; }
+  }
+
+  .spalte { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  /* SZENE */
+  .szene { padding: 12px 10px 8px; }
+
+  svg#roehre { width: 100%; height: auto; display: block; }
+  svg#roehre text { font-family: var(--font); }
+
+  .glas { fill: rgba(120,160,220,0.06); stroke: rgba(160,190,230,0.38); stroke-width: 2; }
+  .leitung { fill: none; stroke: var(--wire-off); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.3s; }
+  svg.an .leitung { stroke: var(--wire-on); }
+
+  .elektrode { transition: fill 0.3s; }
+  .kathode { fill: #3a4f78; }
+  .anode { fill: #6b3a3a; }
+  svg.an .kathode { fill: var(--minus); }
+  svg.an .anode { fill: var(--plus); }
+
+  .platte { fill: #4a5070; transition: fill 0.3s; }
+  .platte.plus { fill: var(--plus); }
+  .platte.minus { fill: var(--minus); }
+  .pol { opacity: 0; transition: opacity 0.3s; }
+  .pol.zeigen { opacity: 1; }
+
+  .schirm { fill: #1d2620; stroke: #34443a; stroke-width: 1; transition: fill 0.4s; }
+  svg.an .schirm { fill: #23452f; }
+
+  .beschriftung { fill: var(--text); font-size: 13px; font-weight: 600; }
+  .klein { fill: var(--muted); font-size: 11px; }
+  .skala-zahl { fill: var(--muted); font-size: 10px; font-family: var(--mono) !important; }
+  .fuehrung { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+  .strich { stroke: #8fa59a; stroke-width: 1; }
+
+  #strahlGruppe, #vergleichGruppe { opacity: 0; transition: opacity 0.5s; }
+  svg.an #strahlGruppe { opacity: 1; }
+  svg.an.vergleich-an #vergleichGruppe { opacity: 1; }
+
+  .strahl-glut { fill: none; stroke: var(--strahl); stroke-width: 7; opacity: 0.16; stroke-linecap: round; }
+  .strahl-kern { fill: none; stroke: var(--strahl); stroke-width: 1.6; opacity: 0.75; stroke-linecap: round; }
+  .strahl-fluss {
+    fill: none; stroke: #e6f8ff; stroke-width: 2.4; stroke-linecap: round;
+    stroke-dasharray: 0.1 12;
+    animation: fluss 1.4s linear infinite;
+  }
+  .vergleich-bahn {
+    fill: none; stroke: var(--vergleich); stroke-width: 2.2; stroke-linecap: round;
+    stroke-dasharray: 7 6; opacity: 0.9;
+    animation: fluss 1.4s linear infinite;
+  }
+  @keyframes fluss { to { stroke-dashoffset: -26; } }
+
+  /* ANZEIGE */
+  .anzeige {
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14.5px;
+    font-weight: 500;
+  }
+  .anzeige-zeile { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+  .anzeige-zeile.an { color: var(--text); }
+  .punkt { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; background: var(--border); }
+  .anzeige-zeile.an .punkt.haupt { background: var(--fleck); box-shadow: 0 0 8px rgba(157,255,154,0.6); }
+  .punkt.vgl { background: var(--vergleich); }
+  .anzeige-zeile[hidden] { display: none; }
+
+  /* VERMUTEN–PRÜFEN */
+  .vermuten { padding: 12px 16px 14px; border-width: 2px; transition: border-color 0.25s, box-shadow 0.25s; }
+  .vermuten.fragt { border-color: var(--yellow); box-shadow: 0 0 18px rgba(245,200,66,0.12); }
+  .vm-titel { font-size: 14px; font-weight: 600; color: var(--yellow); margin-bottom: 6px; }
+  .vm-frage { font-size: 14.5px; line-height: 1.45; margin-bottom: 10px; }
+  .vm-optionen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .vm-weiter { font-size: 13px; color: var(--muted); line-height: 1.45; }
+  .vm-ergebnis {
+    font-size: 14px; line-height: 1.5; margin-bottom: 6px;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;
+  }
+  .vm-ergebnis b { font-weight: 600; }
+  .vm-abbrechen {
+    margin-top: 8px; background: none; border: none; color: var(--muted);
+    font-size: 12.5px; text-decoration: underline; padding: 6px 2px; cursor: pointer;
+  }
+  .ok { color: var(--green); font-weight: 700; }
+  .nein { color: var(--red); font-weight: 700; }
+
+  /* TASTEN */
+  .taste {
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.25;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.2s, background 0.2s, transform 0.1s;
+  }
+  .taste:active:not(:disabled) { transform: scale(0.97); }
+  .taste.aktiv { border-color: var(--blue); background: rgba(74,158,255,0.16); color: #cfe4ff; }
+  .taste.wartend { border-style: dashed; border-color: var(--yellow); background: rgba(245,200,66,0.10); }
+  .taste:disabled { opacity: 0.38; cursor: default; }
+  .taste.wartend:disabled { opacity: 1; }
+  .vm-optionen .taste { border-color: rgba(245,200,66,0.45); }
+
+  /* STUFENKARTEN */
+  .stufe { padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 7px; transition: opacity 0.25s; }
+  .stufe-zeile { flex-direction: row; align-items: center; justify-content: space-between; }
+  .stufe-zeile .schalter { width: auto; min-width: 140px; }
+  .reihe.polung { display: grid; grid-template-columns: 0.55fr 1fr 1fr; }
+  .stufe.gesperrt .stufe-inhalt { opacity: 0.35; pointer-events: none; }
+  .stufe-kopf { display: flex; align-items: baseline; gap: 8px; }
+  .stufe-nr {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue);
+  }
+  .stufe-name { font-size: 15px; font-weight: 600; }
+  .stufe-hinweis { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .stufe-hinweis:empty { display: none; }
+  .stufe-inhalt { display: flex; flex-direction: column; gap: 6px; }
+  .reihe { display: flex; flex-wrap: wrap; gap: 6px; }
+  .reihe .taste { flex: 1 1 auto; }
+  .unterzeile { font-size: 11.5px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.05em; text-transform: uppercase; }
+
+  /* Kippschalter (wie die Schalterkarten im Gold-Beispiel) */
+  .schalter {
+    display: flex; align-items: center; gap: 12px;
+    min-height: 48px; padding: 6px 12px; width: 100%;
+    border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface2);
+    cursor: pointer; text-align: left;
+  }
+  .schalter:disabled { opacity: 0.38; cursor: default; }
+  .kipp {
+    width: 56px; height: 30px; border-radius: 15px; position: relative; flex-shrink: 0;
+    background: rgba(123,130,160,0.2); border: 2px solid var(--muted); transition: background 0.25s, border-color 0.25s;
+  }
+  .knopf {
+    position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--muted); transition: transform 0.25s, background 0.25s;
+  }
+  .schalter.aktiv .kipp { background: rgba(245,200,66,0.2); border-color: var(--yellow); }
+  .schalter.aktiv .knopf { transform: translateX(26px); background: var(--yellow); }
+  .schalter.vgl.aktiv .kipp { background: rgba(255,159,67,0.2); border-color: var(--vergleich); }
+  .schalter.vgl.aktiv .knopf { background: var(--vergleich); }
+  .schalter-text { font-size: 14px; font-weight: 500; line-height: 1.3; }
+  .schalter-zustand { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  /* Schieberegler Plattenspannung */
+  .regler { width: 100%; height: 28px; accent-color: var(--blue); cursor: pointer; }
+  .regler:disabled { opacity: 0.38; cursor: default; }
+  .regler-marken { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); padding: 0 2px; }
+  .regler-marken span.an { color: var(--text); font-weight: 600; }
+
+  .legende { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); }
+  .legende span { display: flex; align-items: center; gap: 8px; }
+  .linie { width: 26px; height: 0; border-top: 3px solid var(--strahl); flex-shrink: 0; }
+  .linie.vgl { border-top: 3px dashed var(--vergleich); }
+
+  /* TABELLE */
+  .table-wrap { overflow-x: auto; }
+  .table-header {
+    padding: 12px 16px 9px;
+    font-size: 12px; font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 9px 10px; text-align: left; font-size: 11.5px; font-family: var(--mono); font-weight: 500;
+    letter-spacing: 0.04em; color: var(--muted); border-bottom: 1px solid var(--border); background: var(--surface2);
+  }
+  thead th:last-child, td:last-child { text-align: center; }
+  tbody tr.current-row { background: rgba(245,200,66,0.07); }
+  tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+  td { padding: 9px 10px; font-size: 13px; line-height: 1.4; vertical-align: top; }
+  td .voll { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+  td.leer { color: var(--muted); text-align: left !important; }
+  .row-indicator {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--yellow);
+    margin-right: 6px; vertical-align: middle; opacity: 0;
+  }
+  tbody tr.current-row .row-indicator { opacity: 1; }
+
+  /* WAS ICH JETZT WEISS */
+  .wissen { padding: 14px 16px 16px; }
+  .wissen h2 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .wissen p.klein-text { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+  .wissen ol { padding-left: 20px; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.5; }
+
+  @media (max-width: 520px) {
+    h1 { font-size: 19px; }
+    .vm-optionen { grid-template-columns: 1fr; }
+    td, th { padding-left: 7px !important; padding-right: 7px !important; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .strahl-fluss, .vergleich-bahn { animation: none; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="seite">
+
+<header class="kopf">
+  <div class="label-tag">Chemie · Atombau</div>
+  <h1>Kathodenstrahlröhre</h1>
+  <p class="subtitle">Was kommt da aus der Kathode?</p>
+  <p class="hint">Antippen zum Schalten. Erst vermuten, dann prüfen. Reihenfolge: Hochspannung → Ablenkplatten → Material → Vergleich.</p>
+</header>
+
+<main class="sim">
+  <div class="spalte">
+    <div class="card szene">
+      <svg id="roehre" viewBox="0 0 660 340" role="img"
+           aria-label="Luftleere Glasröhre mit Kathode, Anode, Ablenkplatten und Leuchtschirm mit Skala">
+        <defs>
+          <radialGradient id="fleckSchein" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#9dff9a" stop-opacity="0.75"/>
+            <stop offset="100%" stop-color="#9dff9a" stop-opacity="0"/>
+          </radialGradient>
+          <clipPath id="lupeRand"><circle cx="600" cy="298" r="29"/></clipPath>
+        </defs>
+
+        <!-- Hochspannungsquelle mit Zuleitungen -->
+        <polyline class="leitung" points="55,122 55,70 130,70"/>
+        <polyline class="leitung" points="113,122 113,100 250,100 250,70 230,70"/>
+        <rect x="130" y="56" width="100" height="28" rx="5" fill="#1a1d26" stroke="#2e3347" stroke-width="1.5"/>
+        <text x="180" y="74" text-anchor="middle" class="klein" style="fill:#e8eaf0;font-size:11.5px">Hochspannung</text>
+        <text x="122" y="64" text-anchor="middle" class="beschriftung" style="fill:#4a9eff">−</text>
+        <text x="240" y="64" text-anchor="middle" class="beschriftung" style="fill:#e74c3c">+</text>
+        <text x="420" y="28" text-anchor="middle" class="klein">Restgas in der Röhre: <tspan id="gasText" style="fill:#e8eaf0">Luft</tspan></text>
+
+        <!-- Glasröhre (luftleer gepumpt, nur wenig Restgas) -->
+        <path class="glas" d="M60,115 L330,115 L560,40 Q610,40 610,85 L610,215 Q610,260 560,260 L330,185 L60,185 Q30,185 30,150 Q30,115 60,115 Z"/>
+
+        <!-- Kathode und Anode mit Loch -->
+        <rect class="elektrode kathode" x="51" y="122" width="7" height="56" rx="2"/>
+        <rect class="elektrode anode" x="110" y="122" width="6" height="23" rx="1.5"/>
+        <rect class="elektrode anode" x="110" y="155" width="6" height="23" rx="1.5"/>
+
+        <!-- Ablenkplatten -->
+        <rect id="platteOben" class="platte" x="190" y="124" width="110" height="6" rx="2"/>
+        <rect id="platteUnten" class="platte" x="190" y="170" width="110" height="6" rx="2"/>
+        <g id="polOben" class="pol">
+          <circle cx="179" cy="127" r="8" fill="#1a1d26" stroke="currentColor" stroke-width="1.5"/>
+          <text id="polObenText" x="179" y="131.5" text-anchor="middle" class="beschriftung" style="font-size:13px">+</text>
+        </g>
+        <g id="polUnten" class="pol">
+          <circle cx="179" cy="173" r="8" fill="#1a1d26" stroke="currentColor" stroke-width="1.5"/>
+          <text id="polUntenText" x="179" y="177.5" text-anchor="middle" class="beschriftung" style="font-size:13px">−</text>
+        </g>
+
+        <!-- Leuchtschirm mit Skala (1 Teilstrich = 12 Einheiten) -->
+        <rect class="schirm" x="596" y="54" width="6" height="192" rx="2"/>
+        <g id="skala"></g>
+
+        <!-- Strahl -->
+        <g id="strahlGruppe">
+          <path id="strahlGlut" class="strahl-glut" d="M60,150 L598,150"/>
+          <path id="strahlKern" class="strahl-kern" d="M60,150 L598,150"/>
+          <path id="strahlFluss" class="strahl-fluss" d="M60,150 L598,150"/>
+          <circle id="fleckSchein" cx="599" cy="150" r="15" fill="url(#fleckSchein)"/>
+          <circle id="fleck" cx="599" cy="150" r="4.5" fill="#d8ffd6"/>
+        </g>
+
+        <!-- Vergleichsstrahl und Lupe -->
+        <g id="vergleichGruppe">
+          <path id="vergleichBahn" class="vergleich-bahn" d="M60,150 L598,150"/>
+          <circle id="vergleichFleck" cx="599" cy="150" r="3.2" fill="#ff9f43"/>
+          <circle cx="600" cy="298" r="30" fill="#141720" stroke="#ff9f43" stroke-width="1.5"/>
+          <g clip-path="url(#lupeRand)">
+            <rect x="592" y="260" width="16" height="80" fill="#23452f"/>
+            <line x1="580" y1="298" x2="592" y2="298" class="strich" style="stroke-width:1.5"/>
+            <circle id="lupeFleck" cx="600" cy="298" r="5" fill="#ff9f43"/>
+          </g>
+          <text x="562" y="293" text-anchor="end" class="klein" style="fill:#ff9f43">Lupe: Mitte des Schirms</text>
+          <text x="562" y="308" text-anchor="end" class="klein">stark vergrößert</text>
+        </g>
+
+        <!-- Beschriftungen -->
+        <line x1="54" y1="180" x2="54" y2="194" class="fuehrung"/>
+        <text x="50" y="208" text-anchor="middle" class="beschriftung">Kathode (−)</text>
+        <text id="kathodeStoff" x="50" y="223" text-anchor="middle" class="klein">aus Eisen</text>
+        <line x1="113" y1="180" x2="113" y2="215" class="fuehrung"/>
+        <text x="122" y="230" text-anchor="middle" class="beschriftung">Anode (+)</text>
+        <line x1="245" y1="178" x2="245" y2="194" class="fuehrung"/>
+        <text x="245" y="208" text-anchor="middle" class="beschriftung">Ablenkplatten</text>
+        <text x="585" y="26" text-anchor="middle" class="beschriftung">Leuchtschirm</text>
+        <text x="618" y="40" text-anchor="start" class="klein" style="font-size:9.5px">Teilstriche</text>
+      </svg>
+    </div>
+
+    <div class="card anzeige" aria-live="polite">
+      <div class="anzeige-zeile" id="anzeigeHaupt"><span class="punkt haupt"></span><span id="anzeigeHauptText">Schirm dunkel – kein Strahl</span></div>
+      <div class="anzeige-zeile an" id="anzeigeVgl" hidden><span class="punkt vgl"></span><span id="anzeigeVglText"></span></div>
+    </div>
+
+    <div class="card vermuten" id="vermuten" aria-live="polite">
+      <p class="vm-titel">🔮 Vermuten–Prüfen: Ich vermute zuerst – dann prüfe ich.</p>
+      <div id="vmInhalt"></div>
+    </div>
+  </div>
+
+  <div class="spalte">
+    <!-- Stufe 1 -->
+    <section class="card stufe stufe-zeile" id="stufe1">
+      <div class="stufe-kopf"><span class="stufe-nr">Stufe 1</span><span class="stufe-name">Hochspannung</span></div>
+      <button type="button" class="schalter" id="schalterHv" aria-pressed="false" aria-label="Hochspannung">
+        <span class="kipp"><span class="knopf"></span></span>
+        <span class="schalter-zustand" id="hvZustand">aus</span>
+      </button>
+    </section>
+
+    <!-- Stufe 2 -->
+    <section class="card stufe" id="stufe2">
+      <div class="stufe-kopf"><span class="stufe-nr">Stufe 2</span><span class="stufe-name">Ablenkplatten</span></div>
+      <p class="stufe-hinweis" id="hinweis2"></p>
+      <div class="stufe-inhalt">
+        <div class="reihe polung">
+          <button type="button" class="taste" data-platten="aus">aus</button>
+          <button type="button" class="taste" data-platten="obenPlus">obere Platte +,<br>untere −</button>
+          <button type="button" class="taste" data-platten="obenMinus">obere Platte −,<br>untere +</button>
+        </div>
+        <span class="unterzeile">Plattenspannung</span>
+        <input type="range" class="regler" id="regler" min="1" max="3" step="1" value="2" aria-label="Plattenspannung">
+        <div class="regler-marken" id="reglerMarken"><span>klein</span><span>mittel</span><span>groß</span></div>
+      </div>
+    </section>
+
+    <!-- Stufe 3 -->
+    <section class="card stufe" id="stufe3">
+      <div class="stufe-kopf"><span class="stufe-nr">Stufe 3</span><span class="stufe-name">Kathodenmaterial</span></div>
+      <p class="stufe-hinweis" id="hinweis3"></p>
+      <div class="stufe-inhalt">
+        <span class="unterzeile">Kathode aus</span>
+        <div class="reihe">
+          <button type="button" class="taste" data-kathode="Eisen">Eisen</button>
+          <button type="button" class="taste" data-kathode="Kupfer">Kupfer</button>
+          <button type="button" class="taste" data-kathode="Aluminium">Aluminium</button>
+          <button type="button" class="taste" data-kathode="Zink">Zink</button>
+        </div>
+        <span class="unterzeile">Restgas</span>
+        <div class="reihe">
+          <button type="button" class="taste" data-gas="Wasserstoff">Wasserstoff</button>
+          <button type="button" class="taste" data-gas="Luft">Luft</button>
+          <button type="button" class="taste" data-gas="Neon">Neon</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Zusatzkarte -->
+    <section class="card stufe" id="stufe4">
+      <div class="stufe-kopf"><span class="stufe-nr">Zusatz</span><span class="stufe-name">Vergleichsstrahl</span></div>
+      <p class="stufe-hinweis" id="hinweis4"></p>
+      <div class="stufe-inhalt">
+        <button type="button" class="schalter vgl" id="schalterVgl" aria-pressed="false">
+          <span class="kipp"><span class="knopf"></span></span>
+          <span class="schalter-text">Strahl aus geladenen Wasserstoff-Atomen</span>
+        </button>
+        <div class="legende">
+          <span><i class="linie"></i>Strahl aus der Kathode</span>
+          <span><i class="linie vgl"></i>geladene Wasserstoff-Atome (genauso schnell)</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- BEOBACHTUNGSTABELLE -->
+<section class="card table-wrap">
+  <div class="table-header">Beobachtungstabelle – jede Prüfung wird eingetragen</div>
+  <table>
+    <thead>
+      <tr><th>Einstellung</th><th>Meine Vermutung</th><th>Beobachtung</th><th>Vorhersage stimmte?</th></tr>
+    </thead>
+    <tbody id="tabelle"></tbody>
+  </table>
+</section>
+
+<section class="card wissen">
+  <h2>Was ich jetzt weiß</h2>
+  <p class="klein-text">Schreibe die Sätze vollständig in dein Heft.</p>
+  <ol>
+    <li>Die Teilchen des Strahls sind … geladen, weil …</li>
+    <li>Im Vergleich zum Wasserstoff-Atom sind sie …</li>
+    <li>Das Kathodenmaterial …</li>
+  </ol>
+</section>
+
+</div>
+
+<script>
+  const TS = 12;                                  // SVG-Einheiten pro Teilstrich
+  const AUSSCHLAG = { 1: 2, 2: 4, 3: 6 };         // Teilstriche je Plattenspannung
+  const STUFEN = { 1: 'klein', 2: 'mittel', 3: 'groß' };
+  const MASSENFAKTOR = 1836;                      // gleich schnelle Teilchen: Ablenkung ~ Ladung/Masse
+  const POLUNG = { aus: 'aus', obenPlus: 'obere Platte +, untere −', obenMinus: 'obere Platte −, untere +' };
+  const ruhig = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const zustand = { hv: false, platten: 'aus', stufe: 2, kathode: 'Eisen', gas: 'Luft', vergleich: false };
+  const frei = { s2: false, s3: false, s4: false };
+  const geprueft = { obenPlus: false, obenMinus: false, kathode: false, gas: false, vergleich: false };
+  const zeilen = [];
+  let offen = null;          // Variation, die auf eine Vermutung wartet
+  let rueckmeldung = null;   // letzte Gegenüberstellung Vorhersage/Beobachtung
+  let anzeige = 0;           // aktuell gezeichnete Ablenkung in SVG-Einheiten (+ = nach oben)
+  let animId = 0;
+
+  const OPT = {
+    richtung: [['oben', 'nach oben abgelenkt'], ['unten', 'nach unten abgelenkt'], ['keine', 'keine Ablenkung']],
+    staerke:  [['groesser', 'wird größer'], ['gleich', 'bleibt gleich'], ['kleiner', 'wird kleiner']],
+    material: [['staerker', 'stärker als vorher'], ['gleich', 'genau gleich'], ['schwaecher', 'schwächer als vorher']],
+    vergleich:[['staerker', 'stärker als der Strahl'], ['gleich', 'genauso stark'], ['schwaecher', 'viel schwächer']]
+  };
+
+  const $ = id => document.getElementById(id);
+  const svg = $('roehre');
+
+  // Kathodenmaterial und Restgas gehen bewusst nicht ein: Es kommt immer dieselbe Teilchensorte heraus.
+  function ablenkung(z) {
+    if (!z.hv || z.platten === 'aus') return 0;
+    return (z.platten === 'obenPlus' ? 1 : -1) * AUSSCHLAG[z.stufe];
+  }
+
+  function fleckText(ts) {
+    if (ts === 0) return 'Leuchtfleck in der Mitte';
+    return `Leuchtfleck ${Math.abs(ts)} Teilstriche nach ${ts > 0 ? 'oben' : 'unten'}`;
+  }
+
+  function zustandText() {
+    if (!zustand.hv) return `Hochspannung aus · Kathode: ${zustand.kathode} · Restgas: ${zustand.gas}`;
+    let t = `Platten: ${POLUNG[zustand.platten]}`;
+    if (zustand.platten !== 'aus') t += ` · Spannung: ${STUFEN[zustand.stufe]}`;
+    t += ` · Kathode: ${zustand.kathode} · Restgas: ${zustand.gas}`;
+    if (zustand.vergleich) t += ' · Vergleichsstrahl ein';
+    return t;
+  }
+
+  function vergleiche(neu, alt, mehr, gleich, weniger) {
+    return neu > alt ? mehr : neu < alt ? weniger : gleich;
+  }
+
+  /* ---------- Szene ---------- */
+
+  function skalaZeichnen() {
+    let s = '';
+    for (let n = -8; n <= 8; n++) {
+      const y = 150 - n * TS;
+      const lang = n % 2 === 0;
+      s += `<line x1="${lang ? 586 : 590}" y1="${y}" x2="596" y2="${y}" class="strich"/>`;
+      if (lang) s += `<text x="616" y="${y + 3.5}" class="skala-zahl">${Math.abs(n)}</text>`;
+    }
+    $('skala').innerHTML = s;
+  }
+
+  // Gerade bis zu den Platten, darin eine Parabel, danach wieder gerade bis zum Schirm (x = 598).
+  function bahn(d) {
+    const e = d * 12100 / 77660;   // Versatz am Plattenende, so dass der Schirm genau d erreicht
+    return `M60,150 L190,150 Q245,150 300,${(150 - e).toFixed(2)} L598,${(150 - d).toFixed(2)}`;
+  }
+
+  function strahlSetzen(d) {
+    const b = bahn(d);
+    ['strahlGlut', 'strahlKern', 'strahlFluss'].forEach(id => $(id).setAttribute('d', b));
+    $('fleck').setAttribute('cy', 150 - d);
+    $('fleckSchein').setAttribute('cy', 150 - d);
+    // Vergleichsstrahl: Gegenrichtung, um den Massenfaktor schwächer – auf dem Schirm nicht messbar
+    const dv = -d / MASSENFAKTOR;
+    $('vergleichBahn').setAttribute('d', bahn(dv));
+    $('vergleichFleck').setAttribute('cy', 150 - dv);
+    $('lupeFleck').setAttribute('cy', 298 + 1.6 * d / TS);
+  }
+
+  function animieren() {
+    const ziel = ablenkung(zustand) * TS;
+    const start = anzeige, t0 = performance.now(), dauer = ruhig ? 0 : 750;
+    cancelAnimationFrame(animId);
+    const schritt = t => {
+      const p = dauer ? Math.min(1, (t - t0) / dauer) : 1;
+      const w = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      anzeige = start + (ziel - start) * w;
+      strahlSetzen(anzeige);
+      if (p < 1) animId = requestAnimationFrame(schritt);
+    };
+    animId = requestAnimationFrame(schritt);
+  }
+
+  /* ---------- Vermuten–Prüfen ---------- */
+
+  function anfragen(art, wert) {
+    if (offen || !zustand.hv) return;
+    const neu = { ...zustand };
+    let frage, optionen, aenderung;
+    if (art === 'platten') {
+      if (wert === zustand.platten) return;
+      neu.platten = wert;
+      frage = `Du schaltest die Ablenkplatten auf „${POLUNG[wert]}“. Wie wird der Strahl dann abgelenkt?`;
+      optionen = OPT.richtung;
+      aenderung = `Platten: ${POLUNG[zustand.platten]} → ${POLUNG[wert]}`;
+    } else if (art === 'spannung') {
+      if (wert === zustand.stufe) return;
+      neu.stufe = wert;
+      frage = `Du stellst die Plattenspannung von „${STUFEN[zustand.stufe]}“ auf „${STUFEN[wert]}“. Wie ändert sich die Ablenkung?`;
+      optionen = OPT.staerke;
+      aenderung = `Plattenspannung: ${STUFEN[zustand.stufe]} → ${STUFEN[wert]}`;
+    } else if (art === 'kathode') {
+      if (wert === zustand.kathode) return;
+      neu.kathode = wert;
+      frage = `Du tauschst die Kathode: ${zustand.kathode} → ${wert}. Wie wird der Strahl jetzt abgelenkt?`;
+      optionen = OPT.material;
+      aenderung = `Kathode: ${zustand.kathode} → ${wert}`;
+    } else if (art === 'gas') {
+      if (wert === zustand.gas) return;
+      neu.gas = wert;
+      frage = `Du tauschst das Restgas: ${zustand.gas} → ${wert}. Wie wird der Strahl jetzt abgelenkt?`;
+      optionen = OPT.material;
+      aenderung = `Restgas: ${zustand.gas} → ${wert}`;
+    } else if (art === 'vergleich') {
+      neu.vergleich = true;
+      frage = 'Gleich kommt ein zweiter Strahl dazu: geladene Wasserstoff-Atome, genauso schnell wie der Strahl. ' +
+              'Wasserstoff-Atome sind die leichtesten Atome. Wie stark wird dieser zweite Strahl abgelenkt?';
+      optionen = OPT.vergleich;
+      aenderung = 'Vergleichsstrahl eingeblendet';
+    }
+    offen = { art, wert, neu, frage, optionen, aenderung };
+    zeichnen();
+    insBild($('vermuten'), 'nearest');
+  }
+
+  function beobachtungSchluessel(o) {
+    const alt = Math.abs(ablenkung(zustand)), neu = ablenkung(o.neu);
+    switch (o.art) {
+      case 'platten': return neu > 0 ? 'oben' : neu < 0 ? 'unten' : 'keine';
+      case 'spannung': return vergleiche(Math.abs(neu), alt, 'groesser', 'gleich', 'kleiner');
+      case 'kathode':
+      case 'gas': return vergleiche(Math.abs(neu), alt, 'staerker', 'gleich', 'schwaecher');
+      case 'vergleich': return 'schwaecher';
+    }
+  }
+
+  function textZu(optionen, schluessel) {
+    return optionen.find(o => o[0] === schluessel)[1];
+  }
+
+  function waehlen(schluessel) {
+    if (!offen) return;
+    const o = offen;
+    const soll = beobachtungSchluessel(o);
+    const vermutung = textZu(o.optionen, schluessel);
+    const beobachtet = textZu(o.optionen, soll);
+    const stimmt = schluessel === soll;
+
+    Object.assign(zustand, o.neu);
+    if (o.art === 'platten' && o.wert !== 'aus') geprueft[o.wert] = true;
+    if (o.art === 'kathode' || o.art === 'gas' || o.art === 'vergleich') geprueft[o.art] = true;
+    if (geprueft.obenPlus && geprueft.obenMinus) frei.s3 = true;
+    if (frei.s3 && geprueft.kathode && geprueft.gas) frei.s4 = true;
+
+    const ts = ablenkung(zustand);
+    let detail = fleckText(ts);
+    if (o.art === 'vergleich') {
+      detail = `kaum messbar (unter 1 Teilstrich), in der Lupe leicht nach ${ts > 0 ? 'unten' : 'oben'}; ` +
+               `Strahl: ${fleckText(ts).replace('Leuchtfleck ', '')}`;
+    } else if (o.art === 'kathode' || o.art === 'gas') {
+      detail = 'wieder ' + detail;
+    }
+
+    zeilen.push({ einstellung: o.aenderung, voll: zustandText(), vermutung,
+                  beobachtung: `${beobachtet} – ${detail}`, stimmt: stimmt ? '✓' : '✗' });
+    rueckmeldung = { vermutung, beobachtet, stimmt };
+    offen = null;
+    zeichnen();
+    animieren();
+    insBild(document.querySelector('.szene'), 'start');
+  }
+
+  function abbrechen() {
+    offen = null;
+    zeichnen();
+  }
+
+  function naechsterSchritt() {
+    if (!zustand.hv && !frei.s2) return 'Schalte zuerst die Hochspannung ein (Stufe 1).';
+    if (!zustand.hv) return 'Schalte die Hochspannung wieder ein, um weiterzuprüfen.';
+    if (!frei.s3) return 'Weiter mit Stufe 2: Prüfe beide Polungen der Ablenkplatten. Probiere auch die Plattenspannung aus.';
+    if (!frei.s4) return 'Weiter mit Stufe 3: Tausche die Kathode und das Restgas. Lass dabei die Ablenkplatten eingeschaltet.';
+    if (!geprueft.vergleich) return 'Weiter mit der Zusatzkarte: Blende den Vergleichsstrahl ein.';
+    return 'Du kannst weiter variieren – jede Prüfung landet in der Tabelle.';
+  }
+
+  /* ---------- Darstellung ---------- */
+
+  function zeichnen() {
+    const z = zustand, blockiert = !!offen;
+    const ts = ablenkung(z);
+
+    // Szene
+    svg.classList.toggle('an', z.hv);
+    svg.classList.toggle('vergleich-an', z.vergleich);
+    const plus = z.platten === 'obenPlus', minus = z.platten === 'obenMinus';
+    $('platteOben').setAttribute('class', 'platte' + (plus ? ' plus' : minus ? ' minus' : ''));
+    $('platteUnten').setAttribute('class', 'platte' + (plus ? ' minus' : minus ? ' plus' : ''));
+    ['polOben', 'polUnten'].forEach(id => $(id).classList.toggle('zeigen', z.platten !== 'aus'));
+    $('polObenText').textContent = plus ? '+' : '−';
+    $('polUntenText').textContent = plus ? '−' : '+';
+    $('polOben').style.color = plus ? '#e74c3c' : '#4a9eff';
+    $('polUnten').style.color = plus ? '#4a9eff' : '#e74c3c';
+    $('kathodeStoff').textContent = 'aus ' + z.kathode;
+    $('gasText').textContent = z.gas;
+
+    // Anzeige
+    $('anzeigeHaupt').classList.toggle('an', z.hv);
+    $('anzeigeHauptText').textContent = z.hv
+      ? fleckText(ts) + (ts === 0 ? ' (keine Ablenkung)' : '')
+      : 'Schirm dunkel – kein Strahl';
+    const vglSichtbar = z.hv && z.vergleich;
+    $('anzeigeVgl').hidden = !vglSichtbar;
+    if (vglSichtbar) {
+      $('anzeigeVglText').textContent = ts === 0
+        ? 'Vergleichsstrahl: in der Mitte (keine Ablenkung)'
+        : 'Vergleichsstrahl: kaum messbar, unter 1 Teilstrich – siehe Lupe';
+    }
+
+    // Stufe 1
+    const hv = $('schalterHv');
+    hv.classList.toggle('aktiv', z.hv);
+    hv.setAttribute('aria-pressed', z.hv);
+    hv.disabled = blockiert;
+    $('hvZustand').textContent = z.hv ? 'ein' : 'aus';
+
+    // Stufe 2
+    $('stufe2').classList.toggle('gesperrt', !frei.s2);
+    $('hinweis2').textContent = !frei.s2 ? '🔒 Wird frei, sobald die Hochspannung eingeschaltet ist.'
+      : !z.hv ? 'Hochspannung ist aus.'
+      : z.platten === 'aus' ? 'Die Plattenspannung wirkt nur bei eingeschalteten Platten.' : '';
+    const s2aus = blockiert || !frei.s2 || !z.hv;
+    document.querySelectorAll('[data-platten]').forEach(b => {
+      const w = b.dataset.platten;
+      b.classList.toggle('aktiv', z.platten === w);
+      b.classList.toggle('wartend', !!offen && offen.art === 'platten' && offen.wert === w);
+      b.setAttribute('aria-pressed', z.platten === w);
+      b.disabled = s2aus;
+    });
+    const regler = $('regler');
+    const reglerWert = offen && offen.art === 'spannung' ? offen.wert : z.stufe;
+    regler.value = reglerWert;
+    regler.disabled = s2aus || z.platten === 'aus';
+    regler.setAttribute('aria-valuetext', STUFEN[reglerWert]);
+    [...$('reglerMarken').children].forEach((s, i) => s.classList.toggle('an', i + 1 === reglerWert));
+
+    // Stufe 3
+    $('stufe3').classList.toggle('gesperrt', !frei.s3);
+    $('hinweis3').textContent = !frei.s3 ? '🔒 Wird frei, sobald du beide Polungen der Ablenkplatten geprüft hast.'
+      : !z.hv ? 'Hochspannung ist aus.'
+      : z.platten === 'aus' ? 'Schalte die Ablenkplatten ein, dann kannst du vergleichen.' : '';
+    const s3aus = blockiert || !frei.s3 || !z.hv || z.platten === 'aus';
+    [['kathode', z.kathode], ['gas', z.gas]].forEach(([art, aktuell]) => {
+      document.querySelectorAll(`[data-${art}]`).forEach(b => {
+        const w = b.dataset[art];
+        b.classList.toggle('aktiv', aktuell === w);
+        b.classList.toggle('wartend', !!offen && offen.art === art && offen.wert === w);
+        b.setAttribute('aria-pressed', aktuell === w);
+        b.disabled = s3aus;
+      });
+    });
+
+    // Zusatzkarte
+    $('stufe4').classList.toggle('gesperrt', !frei.s4);
+    $('hinweis4').textContent = !frei.s4 ? '🔒 Wird frei, sobald du eine andere Kathode und ein anderes Restgas geprüft hast.'
+      : !z.hv ? 'Hochspannung ist aus.'
+      : z.platten === 'aus' && !z.vergleich ? 'Schalte die Ablenkplatten ein, dann kannst du vergleichen.' : '';
+    const vgl = $('schalterVgl');
+    vgl.classList.toggle('aktiv', z.vergleich || (!!offen && offen.art === 'vergleich'));
+    vgl.setAttribute('aria-pressed', z.vergleich);
+    vgl.disabled = blockiert || !frei.s4 || !z.hv || (z.platten === 'aus' && !z.vergleich);
+
+    // Vermuten–Prüfen
+    const karte = $('vermuten'), inhalt = $('vmInhalt');
+    karte.classList.toggle('fragt', !!offen);
+    if (offen) {
+      inhalt.innerHTML = `<p class="vm-frage">${offen.frage}</p>
+        <div class="vm-optionen">${offen.optionen.map(o =>
+          `<button type="button" class="taste" data-wahl="${o[0]}">${o[1]}</button>`).join('')}</div>
+        <button type="button" class="vm-abbrechen" data-abbrechen>abbrechen</button>`;
+    } else {
+      let h = '';
+      if (rueckmeldung) {
+        h += `<p class="vm-ergebnis"><b>Vorhersage:</b> ${rueckmeldung.vermutung} · <b>Beobachtung:</b> ${rueckmeldung.beobachtet} · ` +
+             `<span class="${rueckmeldung.stimmt ? 'ok' : 'nein'}">${rueckmeldung.stimmt ? '✓' : '✗'}</span></p>`;
+      }
+      h += `<p class="vm-weiter">${naechsterSchritt()}</p>`;
+      inhalt.innerHTML = h;
+    }
+
+    tabelleZeichnen();
+  }
+
+  function tabelleZeichnen() {
+    const tb = $('tabelle');
+    if (!zeilen.length) {
+      tb.innerHTML = '<tr><td colspan="4" class="leer">Noch keine Einträge – schalte die Hochspannung ein.</td></tr>';
+      return;
+    }
+    tb.innerHTML = zeilen.map((r, i) => `
+      <tr class="${i === zeilen.length - 1 ? 'current-row' : ''}">
+        <td><span class="row-indicator"></span>${r.einstellung}<span class="voll">${r.voll}</span></td>
+        <td>${r.vermutung}</td>
+        <td>${r.beobachtung}</td>
+        <td class="${r.stimmt === '✓' ? 'ok' : r.stimmt === '✗' ? 'nein' : ''}">${r.stimmt}</td>
+      </tr>`).join('');
+  }
+
+  function insBild(el, block) {
+    const r = el.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > window.innerHeight) {
+      el.scrollIntoView({ block, behavior: ruhig ? 'auto' : 'smooth' });
+    }
+  }
+
+  /* ---------- Bedienung ---------- */
+
+  $('schalterHv').addEventListener('click', () => {
+    if (offen) return;
+    zustand.hv = !zustand.hv;
+    if (zustand.hv) frei.s2 = true;
+    anzeige = ablenkung(zustand) * TS;   // Strahl erscheint gleich an der richtigen Stelle
+    strahlSetzen(anzeige);
+    zeilen.push({
+      einstellung: zustand.hv ? 'Hochspannung ein' : 'Hochspannung aus',
+      voll: zustandText(), vermutung: '—',
+      beobachtung: zustand.hv ? 'Strahl sichtbar – ' + fleckText(ablenkung(zustand)) : 'kein Strahl, Schirm dunkel',
+      stimmt: '—'
+    });
+    rueckmeldung = null;
+    zeichnen();
+  });
+
+  $('schalterVgl').addEventListener('click', () => {
+    if (offen) return;
+    if (zustand.vergleich) { zustand.vergleich = false; zeichnen(); }
+    else anfragen('vergleich', true);
+  });
+
+  document.querySelectorAll('[data-platten]').forEach(b =>
+    b.addEventListener('click', () => anfragen('platten', b.dataset.platten)));
+  document.querySelectorAll('[data-kathode]').forEach(b =>
+    b.addEventListener('click', () => anfragen('kathode', b.dataset.kathode)));
+  document.querySelectorAll('[data-gas]').forEach(b =>
+    b.addEventListener('click', () => anfragen('gas', b.dataset.gas)));
+  $('regler').addEventListener('change', e => anfragen('spannung', Number(e.target.value)));
+
+  $('vmInhalt').addEventListener('click', e => {
+    const wahl = e.target.closest('[data-wahl]');
+    if (wahl) waehlen(wahl.dataset.wahl);
+    else if (e.target.closest('[data-abbrechen]')) abbrechen();
+  });
+
+  skalaZeichnen();
+  strahlSetzen(0);
+  zeichnen();
+</script>
+</body>
+</html>
