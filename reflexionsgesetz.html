@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Licht am ebenen Spiegel</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d26;
+    --surface2: #242736;
+    --border: #2e3347;
+    --text: #e8eaf0;
+    --muted: #7b82a0;
+    --blue: #4a9eff;
+    --blue-dim: #1e3a5f;
+    --green: #2ecc71;
+    --yellow: #f5c842;
+    --pink: #e056a0;
+    --wire-off: #3a4060;
+    --radius: 12px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+
+  .seite {
+    width: 100%;
+    max-width: 620px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* KOPF */
+  .kopf { display: flex; flex-direction: column; gap: 14px; text-align: center; }
+
+  .label-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 1px solid var(--blue);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+
+  h1 { font-size: 21px; font-weight: 600; margin-bottom: 4px; line-height: 1.25; }
+  .leitsatz { font-size: 13.5px; color: var(--muted); line-height: 1.4; }
+
+  /* REITER */
+  .reiter {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .reiter-taste {
+    flex: 1;
+    min-height: 48px;
+    padding: 0 10px;
+    border-radius: 9px;
+    border: 1.5px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .reiter-taste.aktiv { background: var(--blue-dim); border-color: var(--blue); color: #fff; }
+  @media (hover: hover) { .reiter-taste:not(.aktiv):hover { color: var(--text); background: var(--surface2); } }
+
+  /* MODUL */
+  .modul { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+  .modul[hidden] { display: none; }
+  .spalte { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  .card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .card-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  /* ZEICHNUNG */
+  .zeichnung svg { width: 100%; height: auto; display: block; -webkit-user-select: none; user-select: none; }
+  .zeichnung svg text { font-family: var(--mono); }
+  .skala-zahl {
+    fill: #c3c9de;
+    paint-order: stroke;
+    stroke: var(--surface);
+    stroke-width: 5px;
+    stroke-linejoin: round;
+  }
+  .bild-text { fill: var(--muted); font-size: 12px; letter-spacing: 0.08em; }
+
+  /* Nur die Ziehgriffe sperren das Scrollen, der Rest der Seite bleibt scrollbar. */
+  .griff { touch-action: none; cursor: grab; -webkit-tap-highlight-color: transparent; }
+  .griff.aus { cursor: default; }
+
+  .legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-top: 12px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .legende span { display: inline-flex; align-items: center; gap: 7px; }
+  .legende svg { width: 34px; height: 14px; flex-shrink: 0; }
+
+  /* STEUERKARTE */
+  .wert { font-family: var(--mono); font-size: 19px; font-weight: 500; margin-bottom: 10px; }
+  .stell-reihe { display: flex; gap: 10px; align-items: center; }
+  .tasten { display: flex; gap: 6px; }
+
+  .taste {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  }
+
+  .taste.pfeil { flex: 0 0 52px; font-size: 24px; line-height: 1; }
+  .taste:active { transform: translateY(1px); }
+  .taste.aktiv { background: var(--blue-dim); border-color: var(--blue); color: #fff; box-shadow: 0 0 12px rgba(74,158,255,0.25); }
+  @media (hover: hover) { .taste:not(.aktiv):hover { border-color: var(--blue); } }
+
+  .taste.licht { font-weight: 600; }
+  .taste.licht.an { background: rgba(245,200,66,0.14); border-color: var(--yellow); color: var(--yellow); box-shadow: 0 0 14px rgba(245,200,66,0.2); }
+
+  .regler-schiene {
+    flex: 1;
+    min-width: 0;
+    height: 48px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .regler-schiene:focus { outline: none; }
+  .regler-schiene:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 8px; }
+  .regler-schiene::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--border); }
+  .regler-schiene::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 30px; height: 30px; margin-top: -12px;
+    border-radius: 50%;
+    background: var(--blue);
+    border: 3px solid #cfe3ff;
+  }
+  .regler-schiene::-moz-range-track { height: 6px; border-radius: 3px; background: var(--border); }
+  .regler-schiene::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: var(--blue); border: 3px solid #cfe3ff; }
+
+  .aktion-reihe { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .aktion-reihe .taste { flex: 1 1 140px; }
+
+  .schalter {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 0 14px 0 10px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .schalter .bahn {
+    position: relative;
+    width: 44px; height: 26px;
+    border-radius: 13px;
+    background: var(--wire-off);
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .schalter .bahn::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #9aa1bb;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .schalter[aria-checked="true"] .bahn { background: var(--blue); }
+  .schalter[aria-checked="true"] .bahn::after { transform: translateX(18px); background: #fff; }
+
+  .zeile-info { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; min-height: 28px; }
+  .zaehler { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .status { font-weight: 600; font-size: 16px; color: var(--green); }
+
+  .reset-row { display: flex; justify-content: flex-end; margin-top: 14px; }
+
+  .reset {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 0 22px;
+    min-height: 46px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
+  }
+
+  .reset:active { transform: translateY(1px); background: var(--blue-dim); border-color: var(--blue); color: var(--text); }
+  @media (hover: hover) { .reset:hover { border-color: var(--blue); color: var(--text); } }
+
+  /* TABELLE */
+  .table-wrap {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    overflow-x: auto;
+  }
+
+  .table-header {
+    padding: 13px 16px 10px;
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    padding: 9px 8px;
+    text-align: center;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    line-height: 1.3;
+  }
+
+  thead th:first-child { text-align: left; padding-left: 16px; }
+
+  tbody tr { transition: background 0.15s; }
+  tbody tr.current-row { background: rgba(245,200,66,0.08); box-shadow: inset 3px 0 0 var(--yellow); }
+  tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+
+  td { padding: 10px 8px; text-align: center; font-size: 14px; color: var(--text); line-height: 1.3; font-family: var(--mono); }
+  td:first-child { text-align: left; padding-left: 16px; white-space: nowrap; }
+
+  tbody tr.locked td { color: var(--muted); }
+  tbody tr.locked.current-row td { color: var(--text); }
+  td.offen { color: #5b6180 !important; letter-spacing: 0.15em; }
+
+  .row-indicator {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--yellow);
+    margin-right: 8px;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  tbody tr.current-row .row-indicator { opacity: 1; }
+
+  .hint { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.6; }
+
+  @media (max-width: 460px) {
+    h1 { font-size: 19px; }
+    .card { padding: 14px 12px; }
+    td, thead th { padding-left: 6px; padding-right: 6px; }
+    td:first-child, thead th:first-child { padding-left: 12px; }
+    td { font-size: 13px; }
+    .taste { font-size: 14px; }
+    .wert { font-size: 17px; }
+  }
+
+  @media (min-width: 860px) {
+    .seite { max-width: 1100px; }
+    .kopf { flex-direction: row; align-items: flex-end; justify-content: space-between; text-align: left; gap: 24px; }
+    .reiter { width: 340px; flex-shrink: 0; }
+    .modul { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+    .hint { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="seite">
+
+<header class="kopf">
+  <div>
+    <div class="label-tag">Physik · Jahrgang 8</div>
+    <h1>Licht am ebenen Spiegel</h1>
+    <p class="leitsatz"><span aria-hidden="true">🔮 </span>Vermuten–Prüfen · Ich vermute zuerst – dann prüfe ich.</p>
+  </div>
+  <div class="reiter" role="tablist" aria-label="Module">
+    <button type="button" class="reiter-taste aktiv" role="tab" id="reiter-messen" aria-controls="modul-messen" aria-selected="true">Messen</button>
+    <button type="button" class="reiter-taste" role="tab" id="reiter-ziel" aria-controls="modul-ziel" aria-selected="false">Ziel treffen</button>
+  </div>
+</header>
+
+<!-- ===================== MODUL 1 · MESSEN ===================== -->
+<section class="modul" id="modul-messen" role="tabpanel" aria-labelledby="reiter-messen">
+  <div class="spalte">
+    <div class="card zeichnung">
+      <svg id="s1Bild" viewBox="0 0 600 390" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-label="Ebener Spiegel mit Einfallslot, Winkelscheibe und Lampe auf einem Kreisbogen">
+        <defs>
+          <pattern id="s1Schraffur" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(45)">
+            <rect width="9" height="9" fill="#1f2330"/>
+            <line x1="0" y1="0" x2="0" y2="9" stroke="#5b6180" stroke-width="2.5"/>
+          </pattern>
+        </defs>
+
+        <!-- Winkelscheibe -->
+        <path id="s1Scheibe" fill="rgba(74,158,255,0.05)" stroke="none"/>
+        <path id="s1VermFeld" fill="rgba(224,86,160,0.06)" stroke="none"/>
+        <g id="s1Striche" stroke="#5b6180" stroke-width="1.5"></g>
+        <path id="s1Bahn" fill="none" stroke="#4a9eff" stroke-opacity="0.3" stroke-width="2" stroke-dasharray="3 7"/>
+
+        <!-- Spiegel: schraffierte Rückseite, glatte Vorderseite -->
+        <rect x="15" y="330" width="570" height="16" fill="url(#s1Schraffur)"/>
+        <line x1="15" y1="330" x2="585" y2="330" stroke="#dfe6f5" stroke-width="3.5"/>
+        <text x="300" y="374" text-anchor="middle" class="bild-text">SPIEGEL</text>
+
+        <!-- Bögen -->
+        <path id="s1BogenE" fill="rgba(74,158,255,0.22)" stroke="#4a9eff" stroke-width="2"/>
+        <path id="s1BogenR" fill="rgba(46,204,113,0.22)" stroke="#2ecc71" stroke-width="2"/>
+
+        <!-- Einfallslot -->
+        <line id="s1Lot" x1="300" y1="330" x2="300" y2="40" stroke="#c9ced6" stroke-width="2" stroke-dasharray="10 7" opacity="0.85"/>
+
+        <!-- Richtung der Lampe (Licht aus) -->
+        <line id="s1Richtung" stroke="#f5c842" stroke-width="2" opacity="0.28"/>
+        <!-- Vermutung -->
+        <line id="s1Vermutung" stroke="#e056a0" stroke-width="4" stroke-dasharray="1 8" stroke-linecap="round"/>
+
+        <!-- Lichtstrahl -->
+        <polyline id="s1Schein" fill="none" stroke="#f5c842" stroke-width="10" stroke-opacity="0.18" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline id="s1Strahl" fill="none" stroke="#f5c842" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <path id="s1Pfeil0" d="M 10 0 L -7 -8 L -7 8 Z" fill="#f5c842" stroke="#0f1117" stroke-width="1.5"/>
+        <path id="s1Pfeil1" d="M 10 0 L -7 -8 L -7 8 Z" fill="#f5c842" stroke="#0f1117" stroke-width="1.5"/>
+
+        <circle cx="300" cy="330" r="4.5" fill="#dfe6f5"/>
+
+        <!-- Skalenzahlen liegen über den Strahlen -->
+        <g id="s1Zahlen"></g>
+
+        <!-- Tippfeld für die Vermutung (rechte Skalenhälfte) -->
+        <path id="s1Sektor" class="griff" fill="transparent" pointer-events="all"/>
+
+        <!-- Lampe mit Ziehgriff -->
+        <g id="s1Lampe" class="griff">
+          <circle r="40" fill="transparent" pointer-events="all"/>
+          <circle r="31" fill="none" stroke="#4a9eff" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <rect x="-24" y="-10" width="30" height="20" rx="4" fill="#2a2f42" stroke="#9aa3c0" stroke-width="1.5"/>
+          <path d="M 6 -10 L 18 -15 L 18 15 L 6 10 Z" fill="#363c55" stroke="#9aa3c0" stroke-width="1.5"/>
+          <line id="s1Linse" x1="19" y1="-12" x2="19" y2="12" stroke="#f5c842" stroke-width="3" stroke-linecap="round"/>
+        </g>
+      </svg>
+      <div class="legende">
+        <span><svg viewBox="0 0 34 14"><line x1="1" y1="7" x2="33" y2="7" stroke="#f5c842" stroke-width="3"/><path d="M 22 7 L 13 2 L 13 12 Z" fill="#f5c842"/></svg>Lichtstrahl</span>
+        <span><svg viewBox="0 0 34 14"><line x1="3" y1="7" x2="33" y2="7" stroke="#e056a0" stroke-width="4" stroke-dasharray="1 8" stroke-linecap="round"/></svg>Vermutung</span>
+        <span><svg viewBox="0 0 34 14"><line x1="1" y1="7" x2="33" y2="7" stroke="#c9ced6" stroke-width="2" stroke-dasharray="10 7"/></svg>Einfallslot</span>
+        <span>Bogen links: Einfallswinkel · Bogen rechts: Reflexionswinkel</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="spalte">
+    <div class="card">
+      <div class="wert" id="s1Wert" aria-live="polite">Einfallswinkel: 30°</div>
+      <div class="stell-reihe">
+        <button type="button" class="taste pfeil" id="s1Minus" aria-label="Einfallswinkel kleiner">−</button>
+        <input type="range" class="regler-schiene" id="s1Regler" min="0" max="85" step="5" value="30" aria-label="Einfallswinkel">
+        <button type="button" class="taste pfeil" id="s1Plus" aria-label="Einfallswinkel größer">+</button>
+      </div>
+      <div class="aktion-reihe">
+        <button type="button" class="schalter" role="switch" aria-checked="true" id="s1LotTaste"><span class="bahn" aria-hidden="true"></span>Einfallslot</button>
+        <button type="button" class="taste licht" id="s1Licht">Licht an</button>
+      </div>
+      <div class="reset-row"><button type="button" class="reset" id="s1Reset">Zurücksetzen</button></div>
+    </div>
+
+    <p class="hint">Ziehe die Lampe oder nutze Regler und Tasten. Tippe bei Licht aus rechts auf die Skala, um deine Vermutung zu setzen.</p>
+
+    <div class="table-wrap">
+      <div class="table-header">Messtabelle</div>
+      <table>
+        <thead>
+          <tr><th>Einfallswinkel</th><th>Meine Vermutung</th><th>Reflexionswinkel</th></tr>
+        </thead>
+        <tbody id="s1Tabelle"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MODUL 2 · ZIEL TREFFEN ===================== -->
+<section class="modul" id="modul-ziel" role="tabpanel" aria-labelledby="reiter-ziel" hidden>
+  <div class="spalte">
+    <div class="card zeichnung">
+      <svg id="s2Bild" viewBox="0 0 600 470" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-label="Lampe, drehbarer Spiegel mit Einfallslot und Winkelscheibe, Wand und Ziel">
+        <defs>
+          <pattern id="s2Schraffur" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(45)">
+            <rect width="9" height="9" fill="#1f2330"/>
+            <line x1="0" y1="0" x2="0" y2="9" stroke="#5b6180" stroke-width="2.5"/>
+          </pattern>
+          <pattern id="s2Mauer" patternUnits="userSpaceOnUse" width="14" height="10">
+            <rect width="14" height="10" fill="#3a3f52"/>
+            <path d="M 0 0.5 H 14 M 0 5.5 H 14 M 7 0.5 V 5.5 M 0.5 5.5 V 10" stroke="#262a38" stroke-width="1"/>
+          </pattern>
+        </defs>
+
+        <!-- Wand -->
+        <rect id="s2Wand" fill="url(#s2Mauer)" stroke="#7b82a0" stroke-width="1.5"/>
+
+        <!-- Ziel -->
+        <circle id="s2ZielSchein" r="0" fill="#2ecc71" opacity="0"/>
+        <circle id="s2Ziel" fill="rgba(46,204,113,0.18)" stroke="#2ecc71" stroke-width="2"/>
+        <circle id="s2ZielMitte" r="2.5" fill="#2ecc71"/>
+        <text id="s2ZielText" text-anchor="middle" class="bild-text" fill="#2ecc71">ZIEL</text>
+
+        <!-- Spiegel mit Lot und Winkelscheibe, dreht um P -->
+        <g id="s2Dreh">
+          <path id="s2Scheibe" fill="rgba(74,158,255,0.05)" stroke="none"/>
+          <g id="s2Striche" stroke="#5b6180" stroke-width="1.5"></g>
+          <line id="s2Lot" x1="300" y1="310" x2="300" y2="150" stroke="#c9ced6" stroke-width="2" stroke-dasharray="10 7" opacity="0.85"/>
+          <rect x="230" y="310" width="140" height="12" fill="url(#s2Schraffur)"/>
+          <line x1="230" y1="310" x2="370" y2="310" stroke="#dfe6f5" stroke-width="3.5"/>
+        </g>
+
+        <!-- Richtung der Lampe (Licht aus) -->
+        <line id="s2Richtung" x1="65" y1="310" x2="300" y2="310" stroke="#f5c842" stroke-width="2" opacity="0.28"/>
+
+        <!-- Lichtstrahl -->
+        <polyline id="s2Schein" fill="none" stroke="#f5c842" stroke-width="10" stroke-opacity="0.18" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline id="s2Strahl" fill="none" stroke="#f5c842" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <path id="s2Pfeil0" d="M 10 0 L -7 -8 L -7 8 Z" fill="#f5c842" stroke="#0f1117" stroke-width="1.5"/>
+        <path id="s2Pfeil1" d="M 10 0 L -7 -8 L -7 8 Z" fill="#f5c842" stroke="#0f1117" stroke-width="1.5"/>
+        <path id="s2Pfeil2" d="M 10 0 L -7 -8 L -7 8 Z" fill="#f5c842" stroke="#0f1117" stroke-width="1.5"/>
+
+        <circle cx="300" cy="310" r="4.5" fill="#dfe6f5"/>
+
+        <g id="s2Zahlen"></g>
+
+        <!-- Lampe (fest) -->
+        <g transform="translate(45 310)">
+          <rect x="-24" y="-10" width="30" height="20" rx="4" fill="#2a2f42" stroke="#9aa3c0" stroke-width="1.5"/>
+          <path d="M 6 -10 L 18 -15 L 18 15 L 6 10 Z" fill="#363c55" stroke="#9aa3c0" stroke-width="1.5"/>
+          <line id="s2Linse" x1="19" y1="-12" x2="19" y2="12" stroke="#f5c842" stroke-width="3" stroke-linecap="round"/>
+        </g>
+        <text x="45" y="345" text-anchor="middle" class="bild-text">LAMPE</text>
+
+        <!-- Ziehgriff am Spiegelende -->
+        <g id="s2Griff" class="griff">
+          <circle r="40" fill="transparent" pointer-events="all"/>
+          <circle r="13" fill="#242736" stroke="#4a9eff" stroke-width="2.5"/>
+          <circle r="4" fill="#4a9eff"/>
+        </g>
+      </svg>
+      <div class="legende">
+        <span><svg viewBox="0 0 34 14"><line x1="1" y1="7" x2="33" y2="7" stroke="#f5c842" stroke-width="3"/><path d="M 22 7 L 13 2 L 13 12 Z" fill="#f5c842"/></svg>Lichtstrahl</span>
+        <span><svg viewBox="0 0 34 14"><line x1="1" y1="7" x2="33" y2="7" stroke="#c9ced6" stroke-width="2" stroke-dasharray="10 7"/></svg>Einfallslot</span>
+        <span><svg viewBox="0 0 34 14"><rect x="1" y="2" width="32" height="10" fill="#1f2330" stroke="#5b6180"/><path d="M 5 12 L 13 2 M 13 12 L 21 2 M 21 12 L 29 2" stroke="#5b6180" stroke-width="2"/></svg>Rückseite des Spiegels</span>
+        <span><svg viewBox="0 0 34 14"><rect x="1" y="2" width="32" height="10" fill="#3a3f52" stroke="#7b82a0"/></svg>Wand</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="spalte">
+    <div class="card">
+      <span class="card-label" id="s2SzenenLabel">Szene</span>
+      <div class="tasten" id="s2Szenen" role="group" aria-labelledby="s2SzenenLabel"></div>
+      <span class="card-label" style="margin-top:16px">Spiegel drehen</span>
+      <div class="stell-reihe">
+        <button type="button" class="taste pfeil" id="s2Minus" aria-label="Spiegel im Uhrzeigersinn drehen">−</button>
+        <input type="range" class="regler-schiene" id="s2Regler" min="0" max="180" step="1" value="28" aria-label="Spiegel drehen" aria-valuetext="Spiegelstellung">
+        <button type="button" class="taste pfeil" id="s2Plus" aria-label="Spiegel gegen den Uhrzeigersinn drehen">+</button>
+      </div>
+      <div class="aktion-reihe">
+        <button type="button" class="schalter" role="switch" aria-checked="true" id="s2LotTaste"><span class="bahn" aria-hidden="true"></span>Einfallslot</button>
+        <button type="button" class="taste licht" id="s2Licht">Licht an</button>
+      </div>
+      <div class="zeile-info">
+        <span class="zaehler" id="s2Versuche">Versuche: 0</span>
+        <span class="status" id="s2Status" aria-live="polite"></span>
+      </div>
+      <div class="reset-row"><button type="button" class="reset" id="s2Reset">Zurücksetzen</button></div>
+    </div>
+
+    <p class="hint">Wähle eine Szene. Drehe den Spiegel am Griff, mit dem Regler oder den Tasten.</p>
+
+    <div class="table-wrap">
+      <div class="table-header">Tabelle</div>
+      <table>
+        <thead>
+          <tr><th>Szene</th><th>Versuche bis zum Treffer</th><th>Einfallswinkel</th><th>Reflexionswinkel</th></tr>
+        </thead>
+        <tbody id="s2Tabelle"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Hilfen ---------- */
+  function $(id) { return document.getElementById(id); }
+  function begrenze(x, lo, hi) { return x < lo ? lo : (x > hi ? hi : x); }
+  function z(x) { return String(Math.round(x * 100) / 100); }
+  var SVGNS = 'http://www.w3.org/2000/svg';
+
+  /* Zeitlich begrenzter Ablauf. schritt(p) bekommt p von 0 bis 1.
+     Der Zeitgeber daneben schließt den Ablauf auch dann ab, wenn der Browser
+     gerade keine Bilder zeichnet (Seite im Hintergrund). */
+  function bewege(dauer, schritt, fertig) {
+    var start = null, bildId = null, aktiv = true;
+    function ende() {
+      if (!aktiv) return;
+      aktiv = false;
+      if (bildId !== null) cancelAnimationFrame(bildId);
+      clearTimeout(notfall);
+      schritt(1);
+      if (fertig) fertig();
+    }
+    function bild(zeit) {
+      if (!aktiv) return;
+      if (start === null) start = zeit;
+      var p = (zeit - start) / dauer;
+      if (p >= 1) { ende(); return; }
+      schritt(p);
+      bildId = requestAnimationFrame(bild);
+    }
+    var notfall = setTimeout(ende, dauer + 150);
+    bildId = requestAnimationFrame(bild);
+    return {
+      stopp: function () {
+        aktiv = false;
+        if (bildId !== null) cancelAnimationFrame(bildId);
+        clearTimeout(notfall);
+      }
+    };
+  }
+
+  /* Tastenreihe (eine Taste ist immer gewählt). Gibt die Markier-Funktion zurück. */
+  function baueTasten(id, namen, beiWahl) {
+    var box = $(id), tasten = [];
+    namen.forEach(function (name, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'taste';
+      b.textContent = name;
+      b.addEventListener('click', function () { beiWahl(i); });
+      box.appendChild(b);
+      tasten.push(b);
+    });
+    return function (wahl) {
+      tasten.forEach(function (b, j) {
+        b.classList.toggle('aktiv', j === wahl);
+        b.setAttribute('aria-pressed', j === wahl ? 'true' : 'false');
+      });
+    };
+  }
+
+  /* Ziehgriff: meldet jede Zeigerposition in Bildkoordinaten. */
+  function ziehbar(griff, svg, beiPunkt) {
+    var zeiger = null;
+    function punkt(ev) {
+      var pt = svg.createSVGPoint();
+      pt.x = ev.clientX; pt.y = ev.clientY;
+      return pt.matrixTransform(svg.getScreenCTM().inverse());
+    }
+    griff.addEventListener('pointerdown', function (ev) {
+      if (ev.button !== undefined && ev.button > 0) return;
+      ev.preventDefault();
+      zeiger = ev.pointerId;
+      try { griff.setPointerCapture(ev.pointerId); } catch (f) { /* ältere Browser */ }
+      beiPunkt(punkt(ev));
+    });
+    griff.addEventListener('pointermove', function (ev) {
+      if (ev.pointerId !== zeiger) return;
+      ev.preventDefault();
+      beiPunkt(punkt(ev));
+    });
+    function los(ev) { if (ev.pointerId === zeiger) zeiger = null; }
+    griff.addEventListener('pointerup', los);
+    griff.addEventListener('pointercancel', los);
+    griff.addEventListener('lostpointercapture', los);
+    // Safari: Scrollen nur auf dem Griff unterdrücken
+    griff.addEventListener('touchstart', function (ev) { ev.preventDefault(); }, { passive: false });
+  }
+
+  function linie(el, a, b) {
+    el.setAttribute('x1', z(a.x)); el.setAttribute('y1', z(a.y));
+    el.setAttribute('x2', z(b.x)); el.setAttribute('y2', z(b.y));
+  }
+
+  function zeige(el, an) { el.style.display = an ? '' : 'none'; }
+
+  /* =====================================================================
+     GEOMETRIE — reine Rechnung ohne Seitenelemente.
+     Bildkoordinaten: x nach rechts, y nach unten. Winkel in Grad.
+     ===================================================================== */
+  // GEO-ANFANG
+  var GEO = (function () {
+    var EPS = 1e-7;
+    function v(x, y) { return { x: x, y: y }; }
+    function plus(a, b) { return v(a.x + b.x, a.y + b.y); }
+    function minus(a, b) { return v(a.x - b.x, a.y - b.y); }
+    function mal(a, k) { return v(a.x * k, a.y * k); }
+    function skalar(a, b) { return a.x * b.x + a.y * b.y; }
+    function kreuz(a, b) { return a.x * b.y - a.y * b.x; }
+    function laenge(a) { return Math.sqrt(skalar(a, a)); }
+    function einheit(a) { var l = laenge(a); return v(a.x / l, a.y / l); }
+    function rad(g) { return g * Math.PI / 180; }
+    function grad(r) { return r * 180 / Math.PI; }
+
+    // Richtungsvektor d an der Spiegelnormale n (Einheitsvektor) spiegeln: r = d − 2(d·n)n
+    function spiegle(d, n) {
+      var k = 2 * skalar(d, n);
+      return v(d.x - k * n.x, d.y - k * n.y);
+    }
+
+    function winkelZwischen(a, b) {
+      return grad(Math.acos(Math.max(-1, Math.min(1, skalar(einheit(a), einheit(b))))));
+    }
+
+    // Strahl o + t·d gegen Strecke a–b; liefert t > 0 oder null
+    function strahlStrecke(o, d, a, b) {
+      var s = minus(b, a), nenner = kreuz(d, s);
+      if (Math.abs(nenner) < EPS) return null;
+      var w = minus(a, o);
+      var t = kreuz(w, s) / nenner;
+      var u = kreuz(w, d) / nenner;
+      if (t <= EPS || u < -1e-9 || u > 1 + 1e-9) return null;
+      return t;
+    }
+
+    // Strahl gegen Kreis; liefert das kleinste t > 0 oder null
+    function strahlKreis(o, d, c, r) {
+      var f = minus(o, c);
+      var b = skalar(f, d), cc = skalar(f, f) - r * r;
+      var disk = b * b - cc;
+      if (disk < 0) return null;
+      var w = Math.sqrt(disk);
+      if (-b - w > EPS) return -b - w;
+      if (-b + w > EPS) return -b + w;
+      return null;
+    }
+
+    // Strahl von innen gegen den Bildrand
+    function strahlRand(o, d, box) {
+      var tx = Infinity, ty = Infinity;
+      if (d.x > EPS) tx = (box.x1 - o.x) / d.x;
+      else if (d.x < -EPS) tx = (box.x0 - o.x) / d.x;
+      if (d.y > EPS) ty = (box.y1 - o.y) / d.y;
+      else if (d.y < -EPS) ty = (box.y0 - o.y) / d.y;
+      return Math.min(tx, ty);
+    }
+
+    function rechteckKanten(r) {
+      var a = v(r.x, r.y), b = v(r.x + r.w, r.y), c = v(r.x + r.w, r.y + r.h), d = v(r.x, r.y + r.h);
+      return [[a, b], [b, c], [c, d], [d, a]];
+    }
+
+    /* ---------- Modul 1: waagerechter Spiegel, fester Auftreffpunkt O ---------- */
+    var M1 = { O: v(300, 330), R: 190, RL: 250, LINSE: 230, box: { x0: 0, y0: 0, x1: 600, y1: 330 } };
+    var N1 = v(0, -1);   // Normale der Spiegelvorderseite
+
+    function m1Lampe(alpha) {
+      return v(M1.O.x - M1.RL * Math.sin(rad(alpha)), M1.O.y - M1.RL * Math.cos(rad(alpha)));
+    }
+
+    function m1Lauf(alpha) {
+      var d = einheit(minus(M1.O, m1Lampe(alpha)));
+      var r = spiegle(d, N1);
+      var t = strahlRand(M1.O, r, M1.box);
+      return {
+        start: minus(M1.O, mal(d, M1.LINSE)),
+        treff: M1.O,
+        ende: plus(M1.O, mal(r, t)),
+        d: d, r: r, n: N1,
+        einfall: winkelZwischen(mal(d, -1), N1),
+        reflexion: winkelZwischen(r, N1)
+      };
+    }
+
+    /* ---------- Modul 2: Spiegel dreht um P ---------- */
+    var M2 = { P: v(300, 310), LAMPE: v(45, 310), LINSE: 20, HALB: 70, ABSTAND: 260, box: { x0: 0, y0: 0, x1: 600, y1: 470 } };
+
+    // ablenkung: Winkel zwischen Laufrichtung des Lichts und Richtung zum Ziel
+    var SZENEN = [
+      { ablenkung: 90,  start: 28, wand: { x: 229, y: 0,  w: 14, h: 150 } },
+      { ablenkung: 60,  start: 16, wand: { x: 350, y: 20, w: 14, h: 130 } },
+      { ablenkung: 120, start: 77, wand: { x: 138, y: 40, w: 14, h: 160 } }
+    ];
+    SZENEN.forEach(function (s) {
+      var a = rad(s.ablenkung);
+      s.ziel = plus(M2.P, mal(v(Math.cos(a), -Math.sin(a)), M2.ABSTAND));
+      // Zielradius aus dem Abstand zum Drehpunkt (Toleranz der Spiegeldrehung, automatisiert geprüft)
+      s.radius = laenge(minus(s.ziel, M2.P)) * Math.sin(rad(3));
+    });
+
+    // theta: Neigung der Spiegelfläche gegen die Waagerechte, gegen den Uhrzeigersinn
+    function m2Spiegel(theta) {
+      var t = rad(theta);
+      var m = v(Math.cos(t), -Math.sin(t));
+      var n = v(-Math.sin(t), -Math.cos(t));   // Normale der Vorderseite
+      return { m: m, n: n, a: minus(M2.P, mal(m, M2.HALB)), b: plus(M2.P, mal(m, M2.HALB)) };
+    }
+
+    function m2Lauf(szene, theta) {
+      var sp = m2Spiegel(theta);
+      var o = plus(M2.LAMPE, v(M2.LINSE, 0)), d = v(1, 0);
+      var punkte = [o], ende = 'rand', winkel = null;
+      var kanten = rechteckKanten(szene.wand);
+      for (var schritt = 0; schritt < 4; schritt++) {
+        var best = { t: strahlRand(o, d, M2.box), art: 'rand' };
+        kanten.forEach(function (k) {
+          var t = strahlStrecke(o, d, k[0], k[1]);
+          if (t !== null && t < best.t) best = { t: t, art: 'wand' };
+        });
+        var tz = strahlKreis(o, d, szene.ziel, szene.radius);
+        if (tz !== null && tz < best.t) best = { t: tz, art: 'ziel' };
+        var ts = strahlStrecke(o, d, sp.a, sp.b);
+        if (ts !== null && ts < best.t) best = { t: ts, art: skalar(d, sp.n) < 0 ? 'spiegel' : 'rueckseite' };
+        var p = plus(o, mal(d, best.t));
+        punkte.push(p);
+        if (best.art !== 'spiegel') { ende = best.art; break; }
+        var r = spiegle(d, sp.n);
+        winkel = { einfall: winkelZwischen(mal(d, -1), sp.n), reflexion: winkelZwischen(r, sp.n) };
+        o = p; d = r;
+      }
+      return { punkte: punkte, ende: ende, treffer: ende === 'ziel', winkel: winkel };
+    }
+
+    return {
+      v: v, plus: plus, minus: minus, mal: mal, laenge: laenge, einheit: einheit, kreuz: kreuz,
+      rad: rad, grad: grad, spiegle: spiegle, winkelZwischen: winkelZwischen,
+      strahlStrecke: strahlStrecke, rechteckKanten: rechteckKanten,
+      M1: M1, m1Lampe: m1Lampe, m1Lauf: m1Lauf,
+      M2: M2, SZENEN: SZENEN, m2Spiegel: m2Spiegel, m2Lauf: m2Lauf
+    };
+  })();
+  // GEO-ENDE
+
+  var v = GEO.v;
+  var LAUF_MS = 1200;
+
+  /* ---------- Gemeinsame Zeichenhilfen ---------- */
+
+  // Kreisbogen-Sektor um c mit Radius r von Richtung u1 nach u2 (Einheitsvektoren)
+  function bogen(c, r, u1, u2) {
+    var a = GEO.plus(c, GEO.mal(u1, r)), b = GEO.plus(c, GEO.mal(u2, r));
+    var uhr = GEO.kreuz(u1, u2) > 0 ? 1 : 0;
+    return 'M ' + z(c.x) + ' ' + z(c.y) + ' L ' + z(a.x) + ' ' + z(a.y) +
+      ' A ' + r + ' ' + r + ' 0 0 ' + uhr + ' ' + z(b.x) + ' ' + z(b.y) + ' Z';
+  }
+
+  // Halbkreis-Skala in lokalen Koordinaten um c (Vorderseite oben)
+  function baueSkala(gruppe, scheibe, c, R) {
+    scheibe.setAttribute('d', 'M ' + (c.x - R) + ' ' + c.y + ' A ' + R + ' ' + R + ' 0 0 1 ' + (c.x + R) + ' ' + c.y + ' Z');
+    var bogenPfad = document.createElementNS(SVGNS, 'path');
+    bogenPfad.setAttribute('d', 'M ' + (c.x - R) + ' ' + c.y + ' A ' + R + ' ' + R + ' 0 0 1 ' + (c.x + R) + ' ' + c.y);
+    bogenPfad.setAttribute('fill', 'none');
+    gruppe.appendChild(bogenPfad);
+    for (var a = -90; a <= 90; a += 5) {
+      var lang = (a % 10 === 0);
+      var s = Math.sin(GEO.rad(a)), k = Math.cos(GEO.rad(a));
+      var innen = R - (lang ? 14 : 8);
+      var l = document.createElementNS(SVGNS, 'line');
+      l.setAttribute('x1', z(c.x + innen * s)); l.setAttribute('y1', z(c.y - innen * k));
+      l.setAttribute('x2', z(c.x + R * s));     l.setAttribute('y2', z(c.y - R * k));
+      if (lang) l.setAttribute('stroke-width', '2');
+      gruppe.appendChild(l);
+    }
+  }
+
+  // Schriftgröße und Zahlenabstand der Skala aus der dargestellten Breite
+  function skalaMass(svg) {
+    var w = svg.getBoundingClientRect().width;
+    if (!w) return null;
+    var bildText = Math.max(12, 11 * 600 / w) + 'px';
+    var texte = svg.querySelectorAll('.bild-text');
+    for (var i = 0; i < texte.length; i++) texte[i].style.fontSize = bildText;
+    return { fs: Math.max(12, 12 * 600 / w), schritt: w < 480 ? 20 : 10 };
+  }
+
+  function zahl(gruppe, p, text, fs) {
+    var t = document.createElementNS(SVGNS, 'text');
+    t.setAttribute('x', z(p.x)); t.setAttribute('y', z(p.y));
+    t.setAttribute('dy', '0.35em');
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('font-size', z(fs));
+    t.setAttribute('class', 'skala-zahl');
+    t.textContent = text;
+    gruppe.appendChild(t);
+  }
+
+  var PFEIL_ANTEIL = [0.45, 0.2, 0.2];
+
+  // Zeichnet den Lichtweg entlang der Punkte bis zur Lauflänge s
+  function zeichneStrahl(teile, punkte, s) {
+    var pts = [], gelaufen = 0, i;
+    if (punkte.length) pts.push(punkte[0]);
+    for (i = 0; i < teile.pfeile.length; i++) zeige(teile.pfeile[i], false);
+    for (i = 0; i < punkte.length - 1 && s > gelaufen; i++) {
+      var a = punkte[i], b = punkte[i + 1];
+      var l = GEO.laenge(GEO.minus(b, a)), d = GEO.einheit(GEO.minus(b, a));
+      var pf = teile.pfeile[i];
+      var pos = (PFEIL_ANTEIL[i] || 0.2) * l;
+      if (pf && s >= gelaufen + pos + 8) {
+        var q = GEO.plus(a, GEO.mal(d, pos));
+        pf.setAttribute('transform', 'translate(' + z(q.x) + ' ' + z(q.y) + ') rotate(' + z(GEO.grad(Math.atan2(d.y, d.x))) + ')');
+        zeige(pf, true);
+      }
+      if (s >= gelaufen + l) pts.push(b);
+      else pts.push(GEO.plus(a, GEO.mal(d, s - gelaufen)));
+      gelaufen += l;
+    }
+    var text = pts.length > 1 ? pts.map(function (p) { return z(p.x) + ',' + z(p.y); }).join(' ') : '';
+    teile.strahl.setAttribute('points', text);
+    teile.schein.setAttribute('points', text);
+  }
+
+  function gesamtLaenge(punkte) {
+    var l = 0;
+    for (var i = 0; i < punkte.length - 1; i++) l += GEO.laenge(GEO.minus(punkte[i + 1], punkte[i]));
+    return l;
+  }
+
+  function schalterSetzen(taste, an) { taste.setAttribute('aria-checked', an ? 'true' : 'false'); }
+
+  /* ---------- Reiter ---------- */
+  var MODULE = ['messen', 'ziel'];
+  var beimZeigen = {};
+
+  function zeigeModul(name) {
+    MODULE.forEach(function (n) {
+      var an = (n === name);
+      $('modul-' + n).hidden = !an;
+      $('reiter-' + n).classList.toggle('aktiv', an);
+      $('reiter-' + n).setAttribute('aria-selected', an ? 'true' : 'false');
+    });
+    if (beimZeigen[name]) beimZeigen[name]();
+  }
+
+  MODULE.forEach(function (n) {
+    $('reiter-' + n).addEventListener('click', function () { zeigeModul(n); });
+  });
+
+  /* =====================================================================
+     MODUL 1 · MESSEN
+     ===================================================================== */
+  (function () {
+    var M = GEO.M1, O = M.O;
+    var ZEILEN = [0, 20, 40, 60, 80];
+    var START = 30;
+
+    var alpha = START, vermutung = null, lot = true;
+    var licht = false, fertig = false, lauf = null;
+    var messung = {};            // Einfallswinkel -> { vermutung, reflexion }
+    var mass = null;
+
+    var svg = $('s1Bild');
+    var el = {
+      lampe: $('s1Lampe'), linse: $('s1Linse'), richtung: $('s1Richtung'), verm: $('s1Vermutung'),
+      bogenE: $('s1BogenE'), bogenR: $('s1BogenR'), lot: $('s1Lot'), zahlen: $('s1Zahlen'),
+      sektor: $('s1Sektor'), vermFeld: $('s1VermFeld'),
+      wert: $('s1Wert'), regler: $('s1Regler'), lotTaste: $('s1LotTaste'), licht: $('s1Licht'),
+      tabelle: $('s1Tabelle')
+    };
+    var teile = { strahl: $('s1Strahl'), schein: $('s1Schein'), pfeile: [$('s1Pfeil0'), $('s1Pfeil1')] };
+
+    baueSkala($('s1Striche'), $('s1Scheibe'), O, M.R);
+
+    // Kreisbogen, auf dem die Lampe läuft (0° bis 85°)
+    (function () {
+      var a = GEO.m1Lampe(0), b = GEO.m1Lampe(85);
+      $('s1Bahn').setAttribute('d', 'M ' + z(a.x) + ' ' + z(a.y) + ' A ' + M.RL + ' ' + M.RL + ' 0 0 0 ' + z(b.x) + ' ' + z(b.y));
+    })();
+
+    // Tippfeld der Vermutung: rechte Hälfte der Winkelscheibe
+    var RS = M.R + 30;
+    var feld = 'M ' + O.x + ' ' + O.y + ' L ' + O.x + ' ' + (O.y - RS) +
+      ' A ' + RS + ' ' + RS + ' 0 0 1 ' + (O.x + RS) + ' ' + O.y + ' Z';
+    el.sektor.setAttribute('d', feld);
+    el.vermFeld.setAttribute('d', 'M ' + O.x + ' ' + O.y + ' L ' + O.x + ' ' + (O.y - M.R) +
+      ' A ' + M.R + ' ' + M.R + ' 0 0 1 ' + (O.x + M.R) + ' ' + O.y + ' Z');
+
+    function richtung(winkel) {   // vom Lot nach rechts gemessen
+      return v(Math.sin(GEO.rad(winkel)), -Math.cos(GEO.rad(winkel)));
+    }
+
+    function zeichneZahlen() {
+      var neu = skalaMass(svg);
+      if (neu) mass = neu;
+      if (!mass) return;
+      el.zahlen.textContent = '';
+      var rl = M.R - 18 - mass.fs * 0.55;
+      for (var a = 0; a <= 90; a += mass.schritt) {
+        [1, -1].forEach(function (seite) {
+          if (a === 0 && seite < 0) return;
+          var p = v(O.x + seite * rl * Math.sin(GEO.rad(a)), O.y - rl * Math.cos(GEO.rad(a)));
+          if (a === 90) p.y -= mass.fs * 0.75;
+          zahl(el.zahlen, p, String(a), mass.fs);
+        });
+      }
+    }
+
+    function zeichneTabelle() {
+      var html = '';
+      ZEILEN.forEach(function (w) {
+        var m = messung[w], aktuell = (w === alpha);
+        html += '<tr class="' + (aktuell ? 'current-row ' : '') + (m ? '' : 'locked') + '">' +
+          '<td><span class="row-indicator"></span>' + w + '°</td>';
+        if (m) {
+          html += '<td>' + (m.vermutung === null ? '–' : m.vermutung + '°') + '</td>' +
+                  '<td>' + m.reflexion + '°</td>';
+        } else {
+          html += '<td class="offen">…</td><td class="offen">…</td>';
+        }
+        html += '</tr>';
+      });
+      el.tabelle.innerHTML = html;
+    }
+
+    function zeichne() {
+      var g = GEO.m1Lauf(alpha);
+      var lp = GEO.m1Lampe(alpha);
+      el.lampe.setAttribute('transform', 'translate(' + z(lp.x) + ' ' + z(lp.y) + ') rotate(' +
+        z(GEO.grad(Math.atan2(g.d.y, g.d.x))) + ')');
+      el.linse.setAttribute('opacity', licht ? '1' : '0.4');
+
+      linie(el.richtung, g.start, O);
+      zeige(el.richtung, !licht);
+      zeige(el.lot, lot);
+
+      if (alpha > 0) { el.bogenE.setAttribute('d', bogen(O, 58, v(0, -1), GEO.mal(g.d, -1))); zeige(el.bogenE, true); }
+      else zeige(el.bogenE, false);
+
+      if (licht && fertig && alpha > 0) { el.bogenR.setAttribute('d', bogen(O, 58, v(0, -1), g.r)); zeige(el.bogenR, true); }
+      else zeige(el.bogenR, false);
+
+      if (vermutung !== null) { linie(el.verm, O, GEO.plus(O, GEO.mal(richtung(vermutung), M.RL))); zeige(el.verm, true); }
+      else zeige(el.verm, false);
+
+      var vermAktiv = !licht && !tabelleVoll();
+      el.sektor.classList.toggle('aus', !vermAktiv);
+      el.sektor.style.pointerEvents = vermAktiv ? '' : 'none';
+      zeige(el.vermFeld, vermAktiv);
+
+      el.wert.textContent = 'Einfallswinkel: ' + alpha + '°';
+      el.regler.value = String(alpha);
+      el.licht.textContent = licht ? 'Licht aus' : 'Licht an';
+      el.licht.classList.toggle('an', licht);
+      schalterSetzen(el.lotTaste, lot);
+      zeichneTabelle();
+    }
+
+    function lichtAus() {
+      if (lauf) { lauf.stopp(); lauf = null; }
+      licht = false; fertig = false;
+      zeichneStrahl(teile, [], 0);
+    }
+
+    function lichtAn() {
+      licht = true; fertig = false;
+      var g = GEO.m1Lauf(alpha);
+      var punkte = [g.start, g.treff, g.ende], gesamt = gesamtLaenge(punkte);
+      var winkel = alpha, verm = vermutung;
+      zeichne();
+      lauf = bewege(LAUF_MS, function (p) { zeichneStrahl(teile, punkte, p * gesamt); }, function () {
+        lauf = null; fertig = true;
+        if (ZEILEN.indexOf(winkel) >= 0 && !messung[winkel]) {
+          messung[winkel] = { vermutung: verm, reflexion: Math.round(g.reflexion) };
+        }
+        zeichne();
+      });
+    }
+
+    // Sind alle Zeilen gemessen, folgt der Strahl bei Licht an jeder Einstellung sofort.
+    function tabelleVoll() {
+      return ZEILEN.every(function (w) { return !!messung[w]; });
+    }
+
+    function strahlSofort() {
+      if (lauf) { lauf.stopp(); lauf = null; }
+      fertig = true;
+      var g = GEO.m1Lauf(alpha);
+      var punkte = [g.start, g.treff, g.ende];
+      zeichneStrahl(teile, punkte, gesamtLaenge(punkte));
+    }
+
+    function setzeWinkel(a) {
+      a = begrenze(Math.round(a / 5) * 5, 0, 85);
+      if (a === alpha) return;
+      alpha = a;
+      vermutung = null;
+      if (licht && tabelleVoll()) strahlSofort();
+      else lichtAus();
+      zeichne();
+    }
+
+    function setzeVermutung(b) {
+      if (licht || tabelleVoll()) return;
+      b = begrenze(Math.round(b / 5) * 5, 0, 90);
+      if (b === vermutung) return;
+      vermutung = b;
+      zeichne();
+    }
+
+    ziehbar(el.lampe, svg, function (p) {
+      setzeWinkel(GEO.grad(Math.atan2(O.x - p.x, O.y - p.y)));
+    });
+    ziehbar(el.sektor, svg, function (p) {
+      setzeVermutung(GEO.grad(Math.atan2(p.x - O.x, O.y - p.y)));
+    });
+
+    el.regler.addEventListener('input', function () { setzeWinkel(Number(el.regler.value)); });
+    $('s1Minus').addEventListener('click', function () { setzeWinkel(alpha - 5); });
+    $('s1Plus').addEventListener('click', function () { setzeWinkel(alpha + 5); });
+    el.lotTaste.addEventListener('click', function () { lot = !lot; zeichne(); });
+    el.licht.addEventListener('click', function () {
+      if (licht) { lichtAus(); zeichne(); } else lichtAn();
+    });
+    $('s1Reset').addEventListener('click', function () {
+      lichtAus();
+      alpha = START; vermutung = null; messung = {};
+      zeichne();
+    });
+
+    beimZeigen.messen = zeichneZahlen;
+    window.addEventListener('resize', function () { if (!$('modul-messen').hidden) zeichneZahlen(); });
+
+    zeichneZahlen();
+    lichtAus();
+    zeichne();
+  })();
+
+  /* =====================================================================
+     MODUL 2 · ZIEL TREFFEN
+     ===================================================================== */
+  (function () {
+    var M = GEO.M2, P = M.P, R = 120;
+    var szenen = GEO.SZENEN.map(function (s) { return { theta: s.start, versuche: 0, treffer: null }; });
+    var k = 0, lot = true;
+    var licht = false, fertig = false, lauf = null, letzter = null;
+    var mass = null;
+
+    var svg = $('s2Bild');
+    var el = {
+      dreh: $('s2Dreh'), lot: $('s2Lot'), griff: $('s2Griff'), zahlen: $('s2Zahlen'),
+      richtung: $('s2Richtung'), linse: $('s2Linse'),
+      wand: $('s2Wand'), ziel: $('s2Ziel'), zielMitte: $('s2ZielMitte'), zielText: $('s2ZielText'), zielSchein: $('s2ZielSchein'),
+      regler: $('s2Regler'), lotTaste: $('s2LotTaste'), licht: $('s2Licht'),
+      versuche: $('s2Versuche'), status: $('s2Status'), tabelle: $('s2Tabelle')
+    };
+    var teile = { strahl: $('s2Strahl'), schein: $('s2Schein'), pfeile: [$('s2Pfeil0'), $('s2Pfeil1'), $('s2Pfeil2')] };
+
+    baueSkala($('s2Striche'), $('s2Scheibe'), P, R);
+    el.lot.setAttribute('y2', String(P.y - 160));
+
+    var markSzene = baueTasten('s2Szenen', ['Szene 1', 'Szene 2', 'Szene 3'], function (i) {
+      if (i === k) return;
+      lichtAus();
+      k = i;
+      zeichneSzene();
+      zeichne();
+    });
+
+    function zeichneSzene() {
+      var s = GEO.SZENEN[k];
+      el.wand.setAttribute('x', s.wand.x); el.wand.setAttribute('y', s.wand.y);
+      el.wand.setAttribute('width', s.wand.w); el.wand.setAttribute('height', s.wand.h);
+      [el.ziel, el.zielMitte, el.zielSchein].forEach(function (c) {
+        c.setAttribute('cx', z(s.ziel.x)); c.setAttribute('cy', z(s.ziel.y));
+      });
+      el.ziel.setAttribute('r', z(s.radius));
+      el.zielSchein.setAttribute('r', z(s.radius + 12));
+      el.zielText.setAttribute('x', z(s.ziel.x));
+      el.zielText.setAttribute('y', z(s.ziel.y - s.radius - 9));
+      markSzene(k);
+    }
+
+    function zeichneZahlen(theta) {
+      var neu = skalaMass(svg);
+      if (neu) mass = neu;
+      if (!mass) return;
+      el.zahlen.textContent = '';
+      // Zahlen außerhalb des Skalenbogens; die 90 liegt jenseits der Spiegelenden
+      var rl = R + 6 + mass.fs * 0.7;
+      for (var a = 0; a <= 90; a += mass.schritt) {
+        [1, -1].forEach(function (seite) {
+          if (a === 0 && seite < 0) return;
+          var phi = GEO.rad(90 + theta + seite * a);
+          var p = GEO.plus(P, GEO.mal(v(Math.cos(phi), -Math.sin(phi)), rl));
+          zahl(el.zahlen, p, String(a), mass.fs);
+        });
+      }
+    }
+
+    function zeichneTabelle() {
+      var html = '';
+      szenen.forEach(function (s, i) {
+        var t = s.treffer, aktuell = (i === k);
+        html += '<tr class="' + (aktuell ? 'current-row ' : '') + (t ? '' : 'locked') + '">' +
+          '<td><span class="row-indicator"></span>Szene ' + (i + 1) + '</td>';
+        if (t) html += '<td>' + t.versuche + '</td><td>' + t.einfall + '°</td><td>' + t.reflexion + '°</td>';
+        else html += '<td class="offen">…</td><td class="offen">…</td><td class="offen">…</td>';
+        html += '</tr>';
+      });
+      el.tabelle.innerHTML = html;
+    }
+
+    function zeichne() {
+      var th = szenen[k].theta;
+      var sp = GEO.m2Spiegel(th);
+      el.dreh.setAttribute('transform', 'rotate(' + (-th) + ' ' + P.x + ' ' + P.y + ')');
+      el.griff.setAttribute('transform', 'translate(' + z(sp.b.x) + ' ' + z(sp.b.y) + ')');
+      zeige(el.lot, lot);
+      zeige(el.richtung, !licht);
+      el.linse.setAttribute('opacity', licht ? '1' : '0.4');
+
+      var getroffen = licht && fertig && letzter && letzter.treffer;
+      el.zielSchein.setAttribute('opacity', getroffen ? '0.35' : '0');
+      el.ziel.setAttribute('fill', getroffen ? 'rgba(46,204,113,0.75)' : 'rgba(46,204,113,0.18)');
+      el.status.textContent = getroffen ? 'Treffer' : '';
+
+      el.regler.value = String(th);
+      el.versuche.textContent = 'Versuche: ' + szenen[k].versuche;
+      el.licht.textContent = licht ? 'Licht aus' : 'Licht an';
+      el.licht.classList.toggle('an', licht);
+      schalterSetzen(el.lotTaste, lot);
+      zeichneZahlen(th);
+      zeichneTabelle();
+    }
+
+    function lichtAus() {
+      if (lauf) { lauf.stopp(); lauf = null; }
+      licht = false; fertig = false; letzter = null;
+      zeichneStrahl(teile, [], 0);
+    }
+
+    function lichtAn() {
+      var nr = k, sz = szenen[nr];
+      sz.versuche += 1;
+      licht = true; fertig = false;
+      var g = GEO.m2Lauf(GEO.SZENEN[nr], sz.theta);
+      letzter = g;
+      var gesamt = gesamtLaenge(g.punkte);
+      zeichne();
+      lauf = bewege(LAUF_MS, function (p) { zeichneStrahl(teile, g.punkte, p * gesamt); }, function () {
+        lauf = null; fertig = true;
+        if (g.treffer && !szenen[nr].treffer) {
+          szenen[nr].treffer = {
+            versuche: szenen[nr].versuche,
+            einfall: Math.round(g.winkel.einfall),
+            reflexion: Math.round(g.winkel.reflexion)
+          };
+        }
+        zeichne();
+      });
+    }
+
+    function setzeTheta(t) {
+      t = begrenze(Math.round(t), 0, 180);
+      if (t === szenen[k].theta) return;
+      szenen[k].theta = t;
+      lichtAus();
+      zeichne();
+    }
+
+    ziehbar(el.griff, svg, function (p) {
+      var w = GEO.grad(Math.atan2(P.y - p.y, p.x - P.x));
+      if (w < 0) w = (w < -90) ? 180 : 0;
+      setzeTheta(w);
+    });
+
+    el.regler.addEventListener('input', function () { setzeTheta(Number(el.regler.value)); });
+    $('s2Minus').addEventListener('click', function () { setzeTheta(szenen[k].theta - 1); });
+    $('s2Plus').addEventListener('click', function () { setzeTheta(szenen[k].theta + 1); });
+    el.lotTaste.addEventListener('click', function () { lot = !lot; zeichne(); });
+    el.licht.addEventListener('click', function () {
+      if (licht) { lichtAus(); zeichne(); } else lichtAn();
+    });
+    $('s2Reset').addEventListener('click', function () {
+      lichtAus();
+      szenen.forEach(function (s, i) { s.theta = GEO.SZENEN[i].start; s.versuche = 0; s.treffer = null; });
+      zeichne();
+    });
+
+    beimZeigen.ziel = function () { zeichneZahlen(szenen[k].theta); };
+    window.addEventListener('resize', function () { if (!$('modul-ziel').hidden) zeichneZahlen(szenen[k].theta); });
+
+    zeichneSzene();
+    lichtAus();
+    zeichne();
+  })();
+
+})();
+</script>
+</body>
+</html>
