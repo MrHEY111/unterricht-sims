@@ -453,7 +453,7 @@
       <div class="reset-row"><button type="button" class="reset" id="s1Reset">Zurücksetzen</button></div>
     </div>
 
-    <p class="hint">Ziehe die Lampe oder nutze Regler und Tasten. Tippe bei Licht aus rechts auf die Skala, um deine Vermutung zu setzen.</p>
+    <p class="hint" id="s1Hinweis">Ziehe die Lampe oder nutze Regler und Tasten.<span id="s1HinweisVerm"> Tippe bei Licht aus rechts auf die Skala, um deine Vermutung zu setzen.</span></p>
 
     <div class="table-wrap">
       <div class="table-header">Messtabelle</div>
@@ -943,7 +943,7 @@
     var el = {
       lampe: $('s1Lampe'), linse: $('s1Linse'), richtung: $('s1Richtung'), verm: $('s1Vermutung'),
       bogenE: $('s1BogenE'), bogenR: $('s1BogenR'), lot: $('s1Lot'), zahlen: $('s1Zahlen'),
-      sektor: $('s1Sektor'), vermFeld: $('s1VermFeld'),
+      sektor: $('s1Sektor'), vermFeld: $('s1VermFeld'), hinweisVerm: $('s1HinweisVerm'),
       wert: $('s1Wert'), regler: $('s1Regler'), lotTaste: $('s1LotTaste'), licht: $('s1Licht'),
       tabelle: $('s1Tabelle')
     };
@@ -1026,6 +1026,7 @@
       el.sektor.classList.toggle('aus', !vermAktiv);
       el.sektor.style.pointerEvents = vermAktiv ? '' : 'none';
       zeige(el.vermFeld, vermAktiv);
+      zeige(el.hinweisVerm, !tabelleVoll());
 
       el.wert.textContent = 'Einfallswinkel: ' + alpha + '°';
       el.regler.value = String(alpha);
