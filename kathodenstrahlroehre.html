@@ -163,24 +163,9 @@
   .punkt.vgl { background: var(--vergleich); }
   .anzeige-zeile[hidden] { display: none; }
 
-  /* VERMUTEN–PRÜFEN */
-  .vermuten { padding: 12px 16px 14px; border-width: 2px; transition: border-color 0.25s, box-shadow 0.25s; }
-  .vermuten.fragt { border-color: var(--yellow); box-shadow: 0 0 18px rgba(245,200,66,0.12); }
-  .vm-titel { font-size: 14px; font-weight: 600; color: var(--yellow); margin-bottom: 6px; }
-  .vm-frage { font-size: 14.5px; line-height: 1.45; margin-bottom: 10px; }
-  .vm-optionen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .vm-weiter { font-size: 13px; color: var(--muted); line-height: 1.45; }
-  .vm-ergebnis {
-    font-size: 14px; line-height: 1.5; margin-bottom: 6px;
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;
-  }
-  .vm-ergebnis b { font-weight: 600; }
-  .vm-abbrechen {
-    margin-top: 8px; background: none; border: none; color: var(--muted);
-    font-size: 12.5px; text-decoration: underline; padding: 6px 2px; cursor: pointer;
-  }
-  .ok { color: var(--green); font-weight: 700; }
-  .nein { color: var(--red); font-weight: 700; }
+  /* NÄCHSTER SCHRITT */
+  .schritt { padding: 12px 16px 14px; }
+  .schritt-text { font-size: 13px; color: var(--muted); line-height: 1.45; }
 
   /* TASTEN */
   .taste {
@@ -198,10 +183,7 @@
   }
   .taste:active:not(:disabled) { transform: scale(0.97); }
   .taste.aktiv { border-color: var(--blue); background: rgba(74,158,255,0.16); color: #cfe4ff; }
-  .taste.wartend { border-style: dashed; border-color: var(--yellow); background: rgba(245,200,66,0.10); }
   .taste:disabled { opacity: 0.38; cursor: default; }
-  .taste.wartend:disabled { opacity: 1; }
-  .vm-optionen .taste { border-color: rgba(245,200,66,0.45); }
 
   /* STUFENKARTEN */
   .stufe { padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 7px; transition: opacity 0.25s; }
@@ -267,7 +249,6 @@
     padding: 9px 10px; text-align: left; font-size: 11.5px; font-family: var(--mono); font-weight: 500;
     letter-spacing: 0.04em; color: var(--muted); border-bottom: 1px solid var(--border); background: var(--surface2);
   }
-  thead th:last-child, td:last-child { text-align: center; }
   tbody tr.current-row { background: rgba(245,200,66,0.07); }
   tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
   td { padding: 9px 10px; font-size: 13px; line-height: 1.4; vertical-align: top; }
@@ -287,7 +268,6 @@
 
   @media (max-width: 520px) {
     h1 { font-size: 19px; }
-    .vm-optionen { grid-template-columns: 1fr; }
     td, th { padding-left: 7px !important; padding-right: 7px !important; }
   }
 
@@ -304,7 +284,7 @@
   <div class="label-tag">Chemie · Atombau</div>
   <h1>Kathodenstrahlröhre</h1>
   <p class="subtitle">Was kommt da aus der Kathode?</p>
-  <p class="hint">Antippen zum Schalten. Erst vermuten, dann prüfen. Reihenfolge: Hochspannung → Ablenkplatten → Material → Vergleich.</p>
+  <p class="hint">Antippen zum Schalten. Reihenfolge: Hochspannung → Ablenkplatten → Material → Vergleich.</p>
 </header>
 
 <main class="sim">
@@ -394,9 +374,8 @@
       <div class="anzeige-zeile an" id="anzeigeVgl" hidden><span class="punkt vgl"></span><span id="anzeigeVglText"></span></div>
     </div>
 
-    <div class="card vermuten" id="vermuten" aria-live="polite">
-      <p class="vm-titel">🔮 Vermuten–Prüfen: Ich vermute zuerst – dann prüfe ich.</p>
-      <div id="vmInhalt"></div>
+    <div class="card schritt" aria-live="polite">
+      <p class="schritt-text" id="schrittText"></p>
     </div>
   </div>
 
@@ -470,7 +449,7 @@
   <div class="table-header">Beobachtungstabelle – jede Prüfung wird eingetragen</div>
   <table>
     <thead>
-      <tr><th>Einstellung</th><th>Meine Vermutung</th><th>Beobachtung</th><th>Vorhersage stimmte?</th></tr>
+      <tr><th>Einstellung</th><th>Beobachtung</th></tr>
     </thead>
     <tbody id="tabelle"></tbody>
   </table>
@@ -500,12 +479,11 @@
   const frei = { s2: false, s3: false, s4: false };
   const geprueft = { obenPlus: false, obenMinus: false, kathode: false, gas: false, vergleich: false };
   const zeilen = [];
-  let offen = null;          // Variation, die auf eine Vermutung wartet
-  let rueckmeldung = null;   // letzte Gegenüberstellung Vorhersage/Beobachtung
   let anzeige = 0;           // aktuell gezeichnete Ablenkung in SVG-Einheiten (+ = nach oben)
   let animId = 0;
 
-  const OPT = {
+  // Wortlaut der Beobachtung je Variation
+  const BEOBACHTUNG = {
     richtung: [['oben', 'nach oben abgelenkt'], ['unten', 'nach unten abgelenkt'], ['keine', 'keine Ablenkung']],
     staerke:  [['groesser', 'wird größer'], ['gleich', 'bleibt gleich'], ['kleiner', 'wird kleiner']],
     material: [['staerker', 'stärker als vorher'], ['gleich', 'genau gleich'], ['schwaecher', 'schwächer als vorher']],
@@ -584,46 +562,38 @@
     animId = requestAnimationFrame(schritt);
   }
 
-  /* ---------- Vermuten–Prüfen ---------- */
+  /* ---------- Variieren ---------- */
 
-  function anfragen(art, wert) {
-    if (offen || !zustand.hv) return;
+  function aendern(art, wert) {
+    if (!zustand.hv) return;
     const neu = { ...zustand };
-    let frage, optionen, aenderung;
+    let optionen, aenderung;
     if (art === 'platten') {
       if (wert === zustand.platten) return;
       neu.platten = wert;
-      frage = `Du schaltest die Ablenkplatten auf „${POLUNG[wert]}“. Wie wird der Strahl dann abgelenkt?`;
-      optionen = OPT.richtung;
+      optionen = BEOBACHTUNG.richtung;
       aenderung = `Platten: ${POLUNG[zustand.platten]} → ${POLUNG[wert]}`;
     } else if (art === 'spannung') {
       if (wert === zustand.stufe) return;
       neu.stufe = wert;
-      frage = `Du stellst die Plattenspannung von „${STUFEN[zustand.stufe]}“ auf „${STUFEN[wert]}“. Wie ändert sich die Ablenkung?`;
-      optionen = OPT.staerke;
+      optionen = BEOBACHTUNG.staerke;
       aenderung = `Plattenspannung: ${STUFEN[zustand.stufe]} → ${STUFEN[wert]}`;
     } else if (art === 'kathode') {
       if (wert === zustand.kathode) return;
       neu.kathode = wert;
-      frage = `Du tauschst die Kathode: ${zustand.kathode} → ${wert}. Wie wird der Strahl jetzt abgelenkt?`;
-      optionen = OPT.material;
+      optionen = BEOBACHTUNG.material;
       aenderung = `Kathode: ${zustand.kathode} → ${wert}`;
     } else if (art === 'gas') {
       if (wert === zustand.gas) return;
       neu.gas = wert;
-      frage = `Du tauschst das Restgas: ${zustand.gas} → ${wert}. Wie wird der Strahl jetzt abgelenkt?`;
-      optionen = OPT.material;
+      optionen = BEOBACHTUNG.material;
       aenderung = `Restgas: ${zustand.gas} → ${wert}`;
     } else if (art === 'vergleich') {
       neu.vergleich = true;
-      frage = 'Gleich kommt ein zweiter Strahl dazu: geladene Wasserstoff-Atome, genauso schnell wie der Strahl. ' +
-              'Wasserstoff-Atome sind die leichtesten Atome. Wie stark wird dieser zweite Strahl abgelenkt?';
-      optionen = OPT.vergleich;
+      optionen = BEOBACHTUNG.vergleich;
       aenderung = 'Vergleichsstrahl eingeblendet';
     }
-    offen = { art, wert, neu, frage, optionen, aenderung };
-    zeichnen();
-    insBild($('vermuten'), 'nearest');
+    ausfuehren({ art, wert, neu, optionen, aenderung });
   }
 
   function beobachtungSchluessel(o) {
@@ -641,13 +611,8 @@
     return optionen.find(o => o[0] === schluessel)[1];
   }
 
-  function waehlen(schluessel) {
-    if (!offen) return;
-    const o = offen;
-    const soll = beobachtungSchluessel(o);
-    const vermutung = textZu(o.optionen, schluessel);
-    const beobachtet = textZu(o.optionen, soll);
-    const stimmt = schluessel === soll;
+  function ausfuehren(o) {
+    const beobachtet = textZu(o.optionen, beobachtungSchluessel(o));
 
     Object.assign(zustand, o.neu);
     if (o.art === 'platten' && o.wert !== 'aus') geprueft[o.wert] = true;
@@ -664,18 +629,11 @@
       detail = 'wieder ' + detail;
     }
 
-    zeilen.push({ einstellung: o.aenderung, voll: zustandText(), vermutung,
-                  beobachtung: `${beobachtet} – ${detail}`, stimmt: stimmt ? '✓' : '✗' });
-    rueckmeldung = { vermutung, beobachtet, stimmt };
-    offen = null;
+    zeilen.push({ einstellung: o.aenderung, voll: zustandText(),
+                  beobachtung: `${beobachtet} – ${detail}` });
     zeichnen();
     animieren();
     insBild(document.querySelector('.szene'), 'start');
-  }
-
-  function abbrechen() {
-    offen = null;
-    zeichnen();
   }
 
   function naechsterSchritt() {
@@ -690,7 +648,7 @@
   /* ---------- Darstellung ---------- */
 
   function zeichnen() {
-    const z = zustand, blockiert = !!offen;
+    const z = zustand;
     const ts = ablenkung(z);
 
     // Szene
@@ -724,7 +682,6 @@
     const hv = $('schalterHv');
     hv.classList.toggle('aktiv', z.hv);
     hv.setAttribute('aria-pressed', z.hv);
-    hv.disabled = blockiert;
     $('hvZustand').textContent = z.hv ? 'ein' : 'aus';
 
     // Stufe 2
@@ -732,16 +689,15 @@
     $('hinweis2').textContent = !frei.s2 ? '🔒 Wird frei, sobald die Hochspannung eingeschaltet ist.'
       : !z.hv ? 'Hochspannung ist aus.'
       : z.platten === 'aus' ? 'Die Plattenspannung wirkt nur bei eingeschalteten Platten.' : '';
-    const s2aus = blockiert || !frei.s2 || !z.hv;
+    const s2aus = !frei.s2 || !z.hv;
     document.querySelectorAll('[data-platten]').forEach(b => {
       const w = b.dataset.platten;
       b.classList.toggle('aktiv', z.platten === w);
-      b.classList.toggle('wartend', !!offen && offen.art === 'platten' && offen.wert === w);
       b.setAttribute('aria-pressed', z.platten === w);
       b.disabled = s2aus;
     });
     const regler = $('regler');
-    const reglerWert = offen && offen.art === 'spannung' ? offen.wert : z.stufe;
+    const reglerWert = z.stufe;
     regler.value = reglerWert;
     regler.disabled = s2aus || z.platten === 'aus';
     regler.setAttribute('aria-valuetext', STUFEN[reglerWert]);
@@ -752,12 +708,11 @@
     $('hinweis3').textContent = !frei.s3 ? '🔒 Wird frei, sobald du beide Polungen der Ablenkplatten geprüft hast.'
       : !z.hv ? 'Hochspannung ist aus.'
       : z.platten === 'aus' ? 'Schalte die Ablenkplatten ein, dann kannst du vergleichen.' : '';
-    const s3aus = blockiert || !frei.s3 || !z.hv || z.platten === 'aus';
+    const s3aus = !frei.s3 || !z.hv || z.platten === 'aus';
     [['kathode', z.kathode], ['gas', z.gas]].forEach(([art, aktuell]) => {
       document.querySelectorAll(`[data-${art}]`).forEach(b => {
         const w = b.dataset[art];
         b.classList.toggle('aktiv', aktuell === w);
-        b.classList.toggle('wartend', !!offen && offen.art === art && offen.wert === w);
         b.setAttribute('aria-pressed', aktuell === w);
         b.disabled = s3aus;
       });
@@ -769,27 +724,12 @@
       : !z.hv ? 'Hochspannung ist aus.'
       : z.platten === 'aus' && !z.vergleich ? 'Schalte die Ablenkplatten ein, dann kannst du vergleichen.' : '';
     const vgl = $('schalterVgl');
-    vgl.classList.toggle('aktiv', z.vergleich || (!!offen && offen.art === 'vergleich'));
+    vgl.classList.toggle('aktiv', z.vergleich);
     vgl.setAttribute('aria-pressed', z.vergleich);
-    vgl.disabled = blockiert || !frei.s4 || !z.hv || (z.platten === 'aus' && !z.vergleich);
+    vgl.disabled = !frei.s4 || !z.hv || (z.platten === 'aus' && !z.vergleich);
 
-    // Vermuten–Prüfen
-    const karte = $('vermuten'), inhalt = $('vmInhalt');
-    karte.classList.toggle('fragt', !!offen);
-    if (offen) {
-      inhalt.innerHTML = `<p class="vm-frage">${offen.frage}</p>
-        <div class="vm-optionen">${offen.optionen.map(o =>
-          `<button type="button" class="taste" data-wahl="${o[0]}">${o[1]}</button>`).join('')}</div>
-        <button type="button" class="vm-abbrechen" data-abbrechen>abbrechen</button>`;
-    } else {
-      let h = '';
-      if (rueckmeldung) {
-        h += `<p class="vm-ergebnis"><b>Vorhersage:</b> ${rueckmeldung.vermutung} · <b>Beobachtung:</b> ${rueckmeldung.beobachtet} · ` +
-             `<span class="${rueckmeldung.stimmt ? 'ok' : 'nein'}">${rueckmeldung.stimmt ? '✓' : '✗'}</span></p>`;
-      }
-      h += `<p class="vm-weiter">${naechsterSchritt()}</p>`;
-      inhalt.innerHTML = h;
-    }
+    // Nächster Schritt
+    $('schrittText').textContent = naechsterSchritt();
 
     tabelleZeichnen();
   }
@@ -797,15 +737,13 @@
   function tabelleZeichnen() {
     const tb = $('tabelle');
     if (!zeilen.length) {
-      tb.innerHTML = '<tr><td colspan="4" class="leer">Noch keine Einträge – schalte die Hochspannung ein.</td></tr>';
+      tb.innerHTML = '<tr><td colspan="2" class="leer">Noch keine Einträge – schalte die Hochspannung ein.</td></tr>';
       return;
     }
     tb.innerHTML = zeilen.map((r, i) => `
       <tr class="${i === zeilen.length - 1 ? 'current-row' : ''}">
         <td><span class="row-indicator"></span>${r.einstellung}<span class="voll">${r.voll}</span></td>
-        <td>${r.vermutung}</td>
         <td>${r.beobachtung}</td>
-        <td class="${r.stimmt === '✓' ? 'ok' : r.stimmt === '✗' ? 'nein' : ''}">${r.stimmt}</td>
       </tr>`).join('');
   }
 
@@ -819,40 +757,30 @@
   /* ---------- Bedienung ---------- */
 
   $('schalterHv').addEventListener('click', () => {
-    if (offen) return;
     zustand.hv = !zustand.hv;
     if (zustand.hv) frei.s2 = true;
     anzeige = ablenkung(zustand) * TS;   // Strahl erscheint gleich an der richtigen Stelle
     strahlSetzen(anzeige);
     zeilen.push({
       einstellung: zustand.hv ? 'Hochspannung ein' : 'Hochspannung aus',
-      voll: zustandText(), vermutung: '—',
-      beobachtung: zustand.hv ? 'Strahl sichtbar – ' + fleckText(ablenkung(zustand)) : 'kein Strahl, Schirm dunkel',
-      stimmt: '—'
+      voll: zustandText(),
+      beobachtung: zustand.hv ? 'Strahl sichtbar – ' + fleckText(ablenkung(zustand)) : 'kein Strahl, Schirm dunkel'
     });
-    rueckmeldung = null;
     zeichnen();
   });
 
   $('schalterVgl').addEventListener('click', () => {
-    if (offen) return;
     if (zustand.vergleich) { zustand.vergleich = false; zeichnen(); }
-    else anfragen('vergleich', true);
+    else aendern('vergleich', true);
   });
 
   document.querySelectorAll('[data-platten]').forEach(b =>
-    b.addEventListener('click', () => anfragen('platten', b.dataset.platten)));
+    b.addEventListener('click', () => aendern('platten', b.dataset.platten)));
   document.querySelectorAll('[data-kathode]').forEach(b =>
-    b.addEventListener('click', () => anfragen('kathode', b.dataset.kathode)));
+    b.addEventListener('click', () => aendern('kathode', b.dataset.kathode)));
   document.querySelectorAll('[data-gas]').forEach(b =>
-    b.addEventListener('click', () => anfragen('gas', b.dataset.gas)));
-  $('regler').addEventListener('change', e => anfragen('spannung', Number(e.target.value)));
-
-  $('vmInhalt').addEventListener('click', e => {
-    const wahl = e.target.closest('[data-wahl]');
-    if (wahl) waehlen(wahl.dataset.wahl);
-    else if (e.target.closest('[data-abbrechen]')) abbrechen();
-  });
+    b.addEventListener('click', () => aendern('gas', b.dataset.gas)));
+  $('regler').addEventListener('change', e => aendern('spannung', Number(e.target.value)));
 
   skalaZeichnen();
   strahlSetzen(0);
