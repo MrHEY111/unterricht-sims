@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallelschaltung – Messplatz</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d26;
+    --surface2: #242736;
+    --border: #2e3347;
+    --text: #e8eaf0;
+    --muted: #9aa1bd;
+    --blue: #4a9eff;
+    --blue-dim: #1e3a5f;
+    --pink: #e056a0;
+    --pink-dim: #4a1f3a;
+    --yellow: #f5c842;
+    --wire-off: #5d678f;
+    --wire-on: #f5c842;
+    --radius: 12px;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, Menlo, Consolas, monospace;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px 12px 32px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  header { text-align: center; margin-bottom: 14px; }
+
+  .label-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 1px solid var(--blue);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+
+  h1 { font-size: 22px; font-weight: 600; }
+  .subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .column { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+  @media (min-width: 980px) {
+    .layout {
+      grid-template-columns: minmax(0, 1.75fr) minmax(290px, 1fr);
+      max-width: 1180px;
+      align-items: start;
+    }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  /* SCHALTBILD */
+  .circuit-wrap { padding: 10px 8px 0; }
+
+  svg#circuit {
+    width: 100%;
+    height: auto;
+    display: block;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  svg text { font-family: var(--sans); fill: var(--text); pointer-events: none; }
+
+  .wire { fill: none; stroke: var(--wire-off); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .node { fill: var(--wire-off); }
+  .closed .wire { stroke: var(--wire-on); }
+  .closed .node { fill: var(--wire-on); }
+
+  .plate { stroke: var(--text); stroke-linecap: butt; }
+  .caption { fill: var(--muted); font-size: 15px; }
+  .caption-strong { font-size: 19px; font-weight: 600; }
+  .sign { fill: var(--muted); font-size: 20px; font-weight: 600; }
+
+  .tap { cursor: pointer; outline: none; }
+  .tap * { pointer-events: none; }
+  .tap .hit { fill: transparent; stroke: none; pointer-events: all; }
+  .tap:active .hit { fill: rgba(255, 255, 255, 0.07); }
+  .tap:focus-visible .hit { stroke: var(--text); stroke-width: 2; stroke-dasharray: 5 4; }
+
+  #arm { stroke: var(--text); stroke-width: 4; stroke-linecap: round; }
+  .contact { fill: var(--surface); stroke: var(--text); stroke-width: 2.5; }
+
+  .res-body { fill: var(--surface2); stroke: var(--text); stroke-width: 2.5; }
+  .res-name { font-size: 17px; fill: var(--muted); }
+  .res-value { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .resistor.sel .res-body { stroke: var(--yellow); stroke-width: 4; }
+
+  .sub { font-size: 12px; }
+
+  .m-body { fill: var(--surface); stroke-width: 2; stroke-dasharray: 4 3; }
+  .amp .m-body { stroke: var(--blue); }
+  .volt .m-body { stroke: var(--pink); }
+  .m-letter { font-size: 14px; font-weight: 600; }
+  .amp .m-letter { fill: var(--blue); }
+  .volt .m-letter { fill: var(--pink); }
+  .m-label { font-size: 17px; fill: var(--muted); }
+
+  .meter.on .m-body { stroke-width: 3; stroke-dasharray: none; }
+  .meter.on .m-letter { font-size: 21px; }
+  .meter.on .m-label { fill: var(--text); }
+
+  .bracket { fill: none; stroke: var(--pink); stroke-width: 2.5; stroke-linejoin: round; }
+  .m-dot { fill: var(--pink); }
+  .pill { fill: var(--surface2); stroke-width: 1.5; }
+  .amp .pill { stroke: var(--blue); }
+  .volt .pill { stroke: var(--pink); }
+  .pill-text { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .meter:not(.on) .bracket,
+  .meter:not(.on) .m-dot,
+  .meter:not(.on) .m-read { display: none; }
+
+  /* AUSWAHLLEISTE */
+  .picker {
+    min-height: 66px;
+    padding: 8px 10px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .picker-hint { font-size: 14px; color: var(--muted); text-align: center; }
+  .picker-label { font-size: 17px; font-weight: 600; white-space: nowrap; }
+  .chips { display: flex; gap: 6px; flex: 1 1 auto; max-width: 480px; }
+
+  .chip {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 48px;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--text);
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .chip[aria-pressed="true"] { border-color: var(--yellow); color: var(--yellow); }
+  .chip:focus-visible, .toggle:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+  [hidden] { display: none !important; }
+
+  @media (max-width: 560px) {
+    .picker { flex-direction: column; min-height: 98px; gap: 6px; }
+    .chips { width: 100%; }
+    .chip { font-size: 13px; }
+  }
+
+  /* SCHALTER-KARTEN */
+  .controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  @media (min-width: 980px), (max-width: 560px) { .controls { grid-template-columns: minmax(0, 1fr); } }
+
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 68px;
+    padding: 10px 14px;
+    font: inherit;
+    color: var(--text);
+    text-align: left;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .toggle[aria-checked="true"] { border-color: var(--yellow); }
+
+  .toggle-visual {
+    position: relative;
+    flex: 0 0 auto;
+    width: 56px;
+    height: 32px;
+    border-radius: 16px;
+    background: var(--surface2);
+    border: 2px solid var(--muted);
+  }
+
+  .toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: transform 0.2s;
+  }
+
+  .toggle[aria-checked="true"] .toggle-visual { border-color: var(--yellow); }
+  .toggle[aria-checked="true"] .toggle-knob { background: var(--yellow); transform: translateX(24px); }
+
+  .toggle-text { display: flex; flex-direction: column; min-width: 0; }
+  .toggle-name { font-size: 14px; font-weight: 600; }
+  .toggle-state { font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .toggle[aria-checked="true"] .toggle-state { color: var(--yellow); font-weight: 600; }
+
+  /* DOKUMENTATIONSANKER */
+  .doc-head {
+    padding: 12px 16px 8px;
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .fitting { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 16px; font-size: 16px; font-variant-numeric: tabular-nums; }
+  .fitting b { font-weight: 600; }
+
+  .readings {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 20px;
+    padding: 2px 16px 12px;
+    list-style: none;
+  }
+
+  .readings-col { min-width: 0; }
+  .readings-col li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid var(--border);
+    list-style: none;
+  }
+  .readings-col li span:last-child { font-weight: 600; white-space: nowrap; }
+  .readings-empty { padding: 4px 16px 14px; font-size: 14px; color: var(--muted); }
+  .doc-sub { padding: 6px 16px 2px; font-size: 13px; color: var(--muted); }
+
+  .hint { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="label-tag">Physik</div>
+  <h1>Parallelschaltung</h1>
+  <p class="subtitle">Messplatz mit drei Zweigen</p>
+</header>
+
+<main class="layout">
+  <div class="column">
+    <div class="card">
+      <div class="circuit-wrap">
+        <svg id="circuit" viewBox="0 0 720 440" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Schaltbild">
+          <!-- Leitungen -->
+          <path class="wire" d="M118 238 V72 H156"/>
+          <path class="wire" d="M214 72 H605"/>
+          <path class="wire" d="M118 254 V420 H605"/>
+          <path class="wire" d="M335 72 V224 M335 328 V420"/>
+          <path class="wire" d="M470 72 V224 M470 328 V420"/>
+          <path class="wire" d="M605 72 V224 M605 328 V420"/>
+          <circle class="node" cx="335" cy="72" r="6"/>
+          <circle class="node" cx="470" cy="72" r="6"/>
+          <circle class="node" cx="335" cy="420" r="6"/>
+          <circle class="node" cx="470" cy="420" r="6"/>
+
+          <!-- Spannungsquelle -->
+          <line class="plate" x1="92" y1="238" x2="144" y2="238" stroke-width="3"/>
+          <line class="plate" x1="105" y1="254" x2="131" y2="254" stroke-width="7"/>
+          <text class="sign" x="100" y="230" text-anchor="middle">+</text>
+          <text class="sign" x="100" y="280" text-anchor="middle">−</text>
+          <text class="caption-strong" x="154" y="253">10&#160;V</text>
+          <text class="caption" x="154" y="273">Quelle</text>
+
+          <!-- Schalter im Schaltbild -->
+          <g class="tap" id="svgSwitch" role="button" tabindex="0" aria-label="Schalter">
+            <rect class="hit" x="144" y="14" width="74" height="104" rx="10"/>
+            <line id="arm" x1="156" y1="72" x2="204" y2="34"/>
+            <circle class="contact" cx="156" cy="72" r="5"/>
+            <circle class="contact" cx="214" cy="72" r="5"/>
+            <text class="caption" x="185" y="104" text-anchor="middle">Schalter</text>
+          </g>
+
+          <g id="resistors"></g>
+          <g id="meters"></g>
+        </svg>
+      </div>
+
+      <div class="picker" id="picker">
+        <p class="picker-hint" id="pickerHint">Tippe auf einen Widerstand, um seinen Wert zu wählen.</p>
+        <span class="picker-label" id="pickerLabel" hidden></span>
+        <div class="chips" id="chips" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="column">
+    <div class="controls">
+      <button type="button" class="toggle" id="btnSwitch" role="switch" aria-checked="false">
+        <span class="toggle-visual"><span class="toggle-knob"></span></span>
+        <span class="toggle-text">
+          <span class="toggle-name">Schalter</span>
+          <span class="toggle-state" id="switchState">offen</span>
+        </span>
+      </button>
+      <button type="button" class="toggle" id="btnRtot" role="switch" aria-checked="false">
+        <span class="toggle-visual"><span class="toggle-knob"></span></span>
+        <span class="toggle-text">
+          <span class="toggle-name">Ersatzwiderstand anzeigen</span>
+          <span class="toggle-state" id="rtotState">aus</span>
+        </span>
+      </button>
+    </div>
+
+    <section class="card" aria-label="Dokumentation">
+      <div class="doc-head">Aktuelle Bestückung</div>
+      <div class="fitting" id="fitting"></div>
+      <div class="doc-sub">Gemessen mit dieser Bestückung</div>
+      <div id="readings" aria-live="polite"></div>
+    </section>
+
+    <p class="hint">Tippe auf A oder V im Schaltbild, um ein Messgerät zu setzen.<br>Erneutes Antippen entfernt es wieder.</p>
+  </div>
+</main>
+
+<script>
+  'use strict';
+
+  const U_SOURCE = 10;
+  const STOCK = [10, 15, 22, 33, 47, 68];
+  const BRANCH_X = [335, 470, 605];
+  const NBSP = ' ';
+
+  const state = {
+    closed: false,
+    showRtot: false,
+    R: [22, 22, 22],
+    selected: null,
+    placed: new Set()
+  };
+
+  // Je Bestückung: Messpunkte, die bei geschlossenem Stromkreis einen Wert geliefert haben.
+  const measuredByFitting = new Map();
+
+  function calc(R) {
+    const I = R.map(function (r) { return U_SOURCE / r; });
+    const Itot = I[0] + I[1] + I[2];
+    return { I: I, Itot: Itot, Rtot: U_SOURCE / Itot };
+  }
+
+  function format(value, digits, unit) {
+    return value.toFixed(digits).replace('.', ',') + NBSP + unit;
+  }
+
+  function symHtml(letter, sub) { return letter + '<sub>' + sub + '</sub>'; }
+  function symSvg(letter, sub) { return letter + '<tspan class="sub" dy="5">' + sub + '</tspan>'; }
+
+  const POINTS = [
+    { id: 'Iges', kind: 'I', sub: 'ges', where: 'in der Zuleitung',
+      cx: 262, cy: 72, label: [262, 38, 'middle'], pill: [262, 114, 72], hit: [220, 16, 86, 118] }
+  ];
+
+  BRANCH_X.forEach(function (x, i) {
+    POINTS.push({ id: 'I' + (i + 1), kind: 'I', sub: String(i + 1), where: 'in Zweig ' + (i + 1),
+      cx: x, cy: 138, label: [x + 28, 126, 'start'], pill: [x + 62, 150, 72], hit: [x - 34, 92, 132, 94] });
+  });
+
+  POINTS.push({ id: 'UQ', kind: 'U', sub: 'Quelle', where: 'über der Quelle',
+    cx: 46, cy: 246, label: [54, 205, 'start'], pill: [46, 290, 72], hit: [4, 180, 100, 140],
+    bracket: 'M118 150 H46 V226 M46 266 V342 H118', dots: [[118, 150], [118, 342]] });
+
+  BRANCH_X.forEach(function (x, i) {
+    const vx = x + 62;
+    POINTS.push({ id: 'U' + (i + 1), kind: 'U', sub: String(i + 1), where: 'über Widerstand ' + (i + 1),
+      cx: vx, cy: 276, label: [x + 70, 238, 'start'], pill: [x + 64, 316, 68], hit: [x + 30, 200, 70, 152],
+      bracket: 'M' + x + ' 206 H' + vx + ' V256 M' + vx + ' 296 V346 H' + x, dots: [[x, 206], [x, 346]] });
+  });
+
+  const R_INACTIVE = 14;
+  const R_ACTIVE = 21;
+
+  function pointValue(point, c) {
+    if (point.id === 'Iges') return format(c.Itot, 2, 'A');
+    if (point.kind === 'I') return format(c.I[Number(point.sub) - 1], 2, 'A');
+    return format(U_SOURCE, 1, 'V');
+  }
+
+  function meterMarkup(p) {
+    const letter = p.kind === 'I' ? 'A' : 'V';
+    let extra = '';
+    if (p.bracket) {
+      extra = '<path class="bracket" d="' + p.bracket + '"/>' + p.dots.map(function (d) {
+        return '<circle class="m-dot" cx="' + d[0] + '" cy="' + d[1] + '" r="5"/>';
+      }).join('');
+    }
+    const pw = p.pill[2];
+    return '<g class="tap meter ' + (p.kind === 'I' ? 'amp' : 'volt') + '" data-id="' + p.id + '" role="button" tabindex="0">'
+      + '<rect class="hit" x="' + p.hit[0] + '" y="' + p.hit[1] + '" width="' + p.hit[2] + '" height="' + p.hit[3] + '" rx="10"/>'
+      + extra
+      + '<circle class="m-body" cx="' + p.cx + '" cy="' + p.cy + '" r="' + R_INACTIVE + '"/>'
+      + '<text class="m-letter" x="' + p.cx + '" y="' + p.cy + '" text-anchor="middle" dominant-baseline="central">' + letter + '</text>'
+      + '<text class="m-label" x="' + p.label[0] + '" y="' + p.label[1] + '" text-anchor="' + p.label[2] + '">' + symSvg(p.kind, p.sub) + '</text>'
+      + '<g class="m-read">'
+      + '<rect class="pill" x="' + (p.pill[0] - pw / 2) + '" y="' + (p.pill[1] - 13) + '" width="' + pw + '" height="26" rx="6"/>'
+      + '<text class="pill-text" x="' + p.pill[0] + '" y="' + p.pill[1] + '" text-anchor="middle" dominant-baseline="central"></text>'
+      + '</g></g>';
+  }
+
+  function resistorMarkup(x, i) {
+    return '<g class="tap resistor" data-index="' + i + '" role="button" tabindex="0">'
+      + '<rect class="hit" x="' + (x - 34) + '" y="200" width="64" height="152" rx="10"/>'
+      + '<rect class="res-body" x="' + (x - 25) + '" y="224" width="50" height="104" rx="2"/>'
+      + '<text class="res-name" x="' + x + '" y="264" text-anchor="middle">' + symSvg('R', String(i + 1)) + '</text>'
+      + '<text class="res-value" x="' + x + '" y="298" text-anchor="middle"></text>'
+      + '</g>';
+  }
+
+  const el = function (id) { return document.getElementById(id); };
+  const svg = el('circuit');
+
+  el('meters').innerHTML = POINTS.map(meterMarkup).join('');
+  el('resistors').innerHTML = BRANCH_X.map(resistorMarkup).join('');
+  el('chips').innerHTML = STOCK.map(function (value) {
+    return '<button type="button" class="chip" data-value="' + value + '" aria-pressed="false">' + value + NBSP + 'Ω</button>';
+  }).join('');
+
+  const meterNodes = {};
+  document.querySelectorAll('.meter').forEach(function (node) { meterNodes[node.dataset.id] = node; });
+  const resistorNodes = Array.prototype.slice.call(document.querySelectorAll('.resistor'));
+  const chipNodes = Array.prototype.slice.call(document.querySelectorAll('.chip'));
+
+  function fittingKey() { return state.R.join('/'); }
+
+  function measuredSet() {
+    const key = fittingKey();
+    if (!measuredByFitting.has(key)) measuredByFitting.set(key, new Set());
+    return measuredByFitting.get(key);
+  }
+
+  function renderCircuit(c) {
+    svg.classList.toggle('closed', state.closed);
+    el('arm').setAttribute('x2', state.closed ? '214' : '204');
+    el('arm').setAttribute('y2', state.closed ? '72' : '34');
+
+    resistorNodes.forEach(function (node, i) {
+      node.querySelector('.res-value').textContent = state.R[i] + NBSP + 'Ω';
+      node.classList.toggle('sel', state.selected === i);
+      node.setAttribute('aria-label', 'Widerstand ' + (i + 1) + ', ' + state.R[i] + ' Ohm, Wert wählen');
+      node.setAttribute('aria-pressed', state.selected === i ? 'true' : 'false');
+    });
+
+    POINTS.forEach(function (p) {
+      const node = meterNodes[p.id];
+      const on = state.placed.has(p.id);
+      const device = p.kind === 'I' ? 'Amperemeter' : 'Voltmeter';
+      const unit = p.kind === 'I' ? 'A' : 'V';
+      const text = state.closed ? pointValue(p, c) : '–' + NBSP + unit;
+      node.classList.toggle('on', on);
+      node.querySelector('.m-body').setAttribute('r', on ? R_ACTIVE : R_INACTIVE);
+      node.querySelector('.pill-text').textContent = text;
+      node.setAttribute('aria-pressed', on ? 'true' : 'false');
+      node.setAttribute('aria-label', device + ' ' + p.where + (on ? ': ' + text : ''));
+    });
+  }
+
+  function renderPicker() {
+    const open = state.selected !== null;
+    el('pickerHint').hidden = open;
+    el('pickerLabel').hidden = !open;
+    el('chips').hidden = !open;
+    if (!open) return;
+    el('pickerLabel').innerHTML = symHtml('R', state.selected + 1) + ' =';
+    chipNodes.forEach(function (chip) {
+      chip.setAttribute('aria-pressed', Number(chip.dataset.value) === state.R[state.selected] ? 'true' : 'false');
+    });
+  }
+
+  function renderControls(c) {
+    el('btnSwitch').setAttribute('aria-checked', state.closed ? 'true' : 'false');
+    el('switchState').textContent = state.closed ? 'geschlossen' : 'offen';
+    el('btnRtot').setAttribute('aria-checked', state.showRtot ? 'true' : 'false');
+    el('rtotState').innerHTML = state.showRtot
+      ? symHtml('R', 'ges') + ' = ' + format(c.Rtot, 1, 'Ω')
+      : 'aus';
+  }
+
+  function readingsColumn(kind, measured, c) {
+    const items = POINTS.filter(function (p) { return p.kind === kind && measured.has(p.id); });
+    return '<ul class="readings-col">' + items.map(function (p) {
+      return '<li><span>' + symHtml(p.kind, p.sub) + '</span><span>' + pointValue(p, c) + '</span></li>';
+    }).join('') + '</ul>';
+  }
+
+  function renderDoc(c) {
+    el('fitting').innerHTML = state.R.map(function (r, i) {
+      return '<span>' + symHtml('R', i + 1) + ' = <b>' + r + NBSP + 'Ω</b></span>';
+    }).join('');
+
+    const measured = measuredSet();
+    el('readings').innerHTML = measured.size === 0
+      ? '<p class="readings-empty">Noch keine Messwerte.</p>'
+      : '<div class="readings">' + readingsColumn('I', measured, c) + readingsColumn('U', measured, c) + '</div>';
+  }
+
+  function render() {
+    if (state.closed) {
+      const measured = measuredSet();
+      state.placed.forEach(function (id) { measured.add(id); });
+    }
+    const c = calc(state.R);
+    renderCircuit(c);
+    renderPicker();
+    renderControls(c);
+    renderDoc(c);
+  }
+
+  function toggleSwitch() {
+    state.closed = !state.closed;
+    render();
+  }
+
+  function activateOnKey(node, handler) {
+    node.addEventListener('click', handler);
+    node.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        handler();
+      }
+    });
+  }
+
+  activateOnKey(el('svgSwitch'), toggleSwitch);
+  el('btnSwitch').addEventListener('click', toggleSwitch);
+
+  el('btnRtot').addEventListener('click', function () {
+    state.showRtot = !state.showRtot;
+    render();
+  });
+
+  POINTS.forEach(function (p) {
+    activateOnKey(meterNodes[p.id], function () {
+      if (state.placed.has(p.id)) state.placed.delete(p.id);
+      else state.placed.add(p.id);
+      render();
+    });
+  });
+
+  resistorNodes.forEach(function (node, i) {
+    activateOnKey(node, function () {
+      state.selected = state.selected === i ? null : i;
+      render();
+    });
+  });
+
+  chipNodes.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      state.R[state.selected] = Number(chip.dataset.value);
+      render();
+    });
+  });
+
+  // iOS-Safari zeigt :active erst mit einem Touch-Listener am Dokument.
+  document.addEventListener('touchstart', function () {}, { passive: true });
+
+  render();
+</script>
+</body>
+</html>
