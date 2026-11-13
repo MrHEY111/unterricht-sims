@@ -496,12 +496,12 @@
   <div class="spalte">
     <div class="card zeichnung">
       <svg id="s2Bild" viewBox="0 0 600 485" xmlns="http://www.w3.org/2000/svg" role="img"
-           aria-label="Draufsicht: ebener Spiegel, davor ein Gegenstand und ein oder zwei Augen, unten eine Abstandsskala in Zentimetern">
+           aria-label="Draufsicht: Glasscheibe, davor ein Gegenstand und ein oder zwei Augen, unten eine Abstandsskala in Zentimetern">
         <defs>
-          <pattern id="s2Schraffur" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(45)">
-            <rect width="9" height="9" fill="#1f2330"/>
-            <line x1="0" y1="0" x2="0" y2="9" stroke="#5b6180" stroke-width="2.5"/>
-          </pattern>
+          <radialGradient id="s2Schein">
+            <stop offset="0" stop-color="#ffe9a8" stop-opacity="0.42"/>
+            <stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/>
+          </radialGradient>
         </defs>
 
         <text x="200" y="26" text-anchor="middle" class="bild-text">VORNE</text>
@@ -517,17 +517,18 @@
         <g id="s2Verlaengerung"></g>
         <g id="s2BildOrt"></g>
 
-        <!-- Spiegel: glatte Vorderseite links, schraffierte Rückseite rechts -->
-        <rect x="300" y="40" width="13" height="380" fill="url(#s2Schraffur)"/>
-        <line x1="300" y1="40" x2="300" y2="420" stroke="#dfe6f5" stroke-width="3.5"/>
-        <text x="300" y="434" text-anchor="middle" class="bild-text">SPIEGEL</text>
+        <!-- Glasscheibe (wie in Reiter 1) -->
+        <rect x="297" y="40" width="6" height="380" rx="2" fill="rgba(143,211,255,0.18)"/>
+        <line x1="300" y1="40" x2="300" y2="420" stroke="#8fd3ff" stroke-width="2.5" stroke-opacity="0.85"/>
+        <text x="300" y="434" text-anchor="middle" class="bild-text">GLASSCHEIBE</text>
 
-        <!-- Blatt Papier -->
+        <!-- Blatt Papier: schwach hell getönt vom durchgelassenen Licht, kein Bild -->
         <g id="s2Papier" class="griff" tabindex="0" role="button" aria-label="Blatt Papier verschieben (Pfeiltasten)">
           <rect x="-26" y="-48" width="52" height="96" fill="transparent" pointer-events="all"/>
+          <ellipse cx="0" cy="0" rx="20" ry="46" fill="url(#s2Schein)"/>
           <rect class="ring" x="-14" y="-40" width="28" height="80" rx="6" fill="none" stroke="#4a9eff" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="3 5"/>
-          <rect x="-3" y="-33" width="6" height="66" rx="1.5" fill="#f2f1ea" stroke="#9aa3c0" stroke-width="1"/>
-          <text id="s2PapierText" x="0" y="-46" text-anchor="middle" class="papier-text">kein Licht</text>
+          <rect x="-3" y="-33" width="6" height="66" rx="1.5" fill="#fff3cc" stroke="#d9c98f" stroke-width="1"/>
+          <text id="s2PapierText" x="0" y="-46" text-anchor="middle" class="papier-text">hell – aber kein Bild der Flamme</text>
         </g>
 
         <!-- Lot, Winkel, Strahlen -->
@@ -570,7 +571,6 @@
         <span><svg viewBox="0 0 34 14"><line x1="1" y1="7" x2="33" y2="7" stroke="#f5c842" stroke-width="3"/><path d="M 22 7 L 13 2 L 13 12 Z" fill="#f5c842"/></svg>Lichtstrahl</span>
         <span><svg viewBox="0 0 34 14"><line x1="1" y1="7" x2="33" y2="7" stroke="#f5c842" stroke-width="2" stroke-dasharray="6 5" opacity="0.6"/></svg>rückwärts verlängert</span>
         <span><svg viewBox="0 0 34 14"><line x1="1" y1="7" x2="33" y2="7" stroke="#c9ced6" stroke-width="2" stroke-dasharray="8 5"/></svg>Lot</span>
-        <span><svg viewBox="0 0 34 14"><rect x="1" y="2" width="32" height="10" fill="#1f2330" stroke="#5b6180"/><path d="M 5 12 L 13 2 M 13 12 L 21 2 M 21 12 L 29 2" stroke="#5b6180" stroke-width="2"/></svg>Rückseite des Spiegels</span>
       </div>
     </div>
   </div>
@@ -583,11 +583,11 @@
         <button type="button" class="taste" id="s2Pfeil" aria-pressed="false">Pfeil</button>
       </div>
 
-      <div class="wert" id="s2Wert" aria-live="polite" style="margin-top:16px">Abstand Gegenstand–Spiegel: 15 cm</div>
+      <div class="wert" id="s2Wert" aria-live="polite" style="margin-top:16px">Abstand Gegenstand–Scheibe: 15 cm</div>
       <div class="stell-reihe">
-        <button type="button" class="taste pfeil" id="s2Minus" aria-label="Gegenstand näher an den Spiegel">−</button>
-        <input type="range" class="regler-schiene" id="s2Regler" min="5" max="40" step="1" value="15" aria-label="Abstand Gegenstand–Spiegel in Zentimetern">
-        <button type="button" class="taste pfeil" id="s2Plus" aria-label="Gegenstand weiter weg vom Spiegel">+</button>
+        <button type="button" class="taste pfeil" id="s2Minus" aria-label="Gegenstand näher an die Scheibe">−</button>
+        <input type="range" class="regler-schiene" id="s2Regler" min="5" max="40" step="1" value="15" aria-label="Abstand Gegenstand–Scheibe in Zentimetern">
+        <button type="button" class="taste pfeil" id="s2Plus" aria-label="Gegenstand weiter weg von der Scheibe">+</button>
       </div>
 
       <div class="schalter-liste">
@@ -595,7 +595,7 @@
         <button type="button" class="schalter" role="switch" aria-checked="false" id="s2LotTaste"><span class="bahn" aria-hidden="true"></span>Lot einblenden</button>
         <button type="button" class="schalter" role="switch" aria-checked="false" id="s2WinkelTaste"><span class="bahn" aria-hidden="true"></span>Winkel anzeigen</button>
         <button type="button" class="schalter" role="switch" aria-checked="false" id="s2VerlTaste"><span class="bahn" aria-hidden="true"></span>Strahlen rückwärts verlängern</button>
-        <button type="button" class="schalter" role="switch" aria-checked="false" id="s2PapierTaste"><span class="bahn" aria-hidden="true"></span>Blatt Papier hinter den Spiegel</button>
+        <button type="button" class="schalter" role="switch" aria-checked="false" id="s2PapierTaste"><span class="bahn" aria-hidden="true"></span>Blatt Papier hinter die Scheibe</button>
       </div>
 
       <div class="reset-row"><button type="button" class="reset" id="s2Reset">Zurücksetzen</button></div>
@@ -607,7 +607,7 @@
       <div class="table-header">Messtabelle</div>
       <table>
         <thead>
-          <tr><th>Abstand Gegenstand–Spiegel</th><th>Abstand Schnittpunkt–Spiegel</th></tr>
+          <tr><th>Abstand Gegenstand–Scheibe</th><th>Abstand Schnittpunkt–Scheibe</th></tr>
         </thead>
         <tbody id="s2Tabelle"></tbody>
       </table>
@@ -970,7 +970,7 @@
      ===================================================================== */
   (function () {
     var START = { d: 15, b: 0, augen: [{ a: 32, b: 17 }, { a: 34, b: -19 }], papier: { a: 30, b: 0 } };
-    var PFEIL = { a: 6, b: -8 };            // Pfeilspitze relativ zum Fußpunkt: 6 cm weiter vom Spiegel weg, 8 cm nach oben
+    var PFEIL = { a: 6, b: -8 };            // Pfeilspitze relativ zum Fußpunkt: 6 cm weiter von der Scheibe weg, 8 cm nach oben
     var GELB = '#f5c842', ORANGE = '#ff9f43';
 
     var form, d, b, augen, zweites, lot, winkelAn, verl, papierAn, papier, messung;
@@ -994,6 +994,35 @@
     function augePos(i) { return GEO.vorne(augen[i].a, augen[i].b); }
     function sichtbareAugen() { return zweites ? [0, 1] : [0]; }
     function papierPos() { return GEO.hinten(papier.a, papier.b); }
+
+    // Anzeige am Blatt: bleibt hinter der Scheibe und im Bild; zu lang → zwei Zeilen; oben kein Platz → unter das Blatt
+    var PAPIER_TEXT = ['hell – aber kein Bild der Flamme', 'hell –', 'aber kein Bild der Flamme'];
+    function papierTextSetzen() {
+      var t = $('s2PapierText');
+      if (!papierAn || $('modul-strahlen').hidden) return;
+      var P = papierPos(), links = MX + 8, rechts = 594;
+      var fs = parseFloat(t.style.fontSize) || 13, zeile = fs * 1.2;
+      t.textContent = PAPIER_TEXT[0];
+      var zeilen = [PAPIER_TEXT[0]], breite = t.getComputedTextLength();
+      if (!breite) return;
+      if (breite > rechts - links) {
+        zeilen = [PAPIER_TEXT[1], PAPIER_TEXT[2]];
+        t.textContent = PAPIER_TEXT[2];
+        breite = t.getComputedTextLength();
+      }
+      var mitte = Math.min(Math.max(P.x, links + breite / 2), rechts - breite / 2);
+      var oben = P.y - 46 - (zeilen.length - 1) * zeile - fs * 0.8 >= 4;
+      var y0 = oben ? -46 - (zeilen.length - 1) * zeile : 33 + 8 + fs * 0.8;
+      var dx = mitte - P.x;
+      t.textContent = '';
+      zeilen.forEach(function (text, i) {
+        var ts = document.createElementNS(SVGNS, 'tspan');
+        ts.setAttribute('x', z(dx));
+        ts.setAttribute('y', z(y0 + i * zeile));
+        ts.textContent = text;
+        t.appendChild(ts);
+      });
+    }
 
     // Der Schnittpunkt existiert erst mit zwei Strahlen je Gegenstandspunkt.
     function schnittSichtbar() { return verl && zweites; }
@@ -1048,6 +1077,7 @@
       zeige(el.auge1Nr, zweites);
       zeige(el.papier, papierAn);
       setzePos(el.papier, papierPos());
+      papierTextSetzen();
 
       var strahlen = '', lote = '', zahlen = '', verlaengerung = '';
       idx.forEach(function (i) {
@@ -1058,7 +1088,7 @@
           ziele.push(R);
           var r1 = GEO.einheit(GEO.minus(R, Q)), r2 = GEO.einheit(GEO.minus(E, R));
           var ende = GEO.minus(E, GEO.mal(r2, 17));
-          // Lichtstrahl: Gegenstand → Spiegel → Auge
+          // Lichtstrahl: Gegenstand → Scheibe → Auge
           strahlen += strecke(Q, R, farbe, 3) + strecke(R, ende, farbe, 3);
           strahlen += pfeilSpitze(GEO.plus(Q, GEO.mal(GEO.minus(R, Q), 0.55)), r1, farbe);
           strahlen += pfeilSpitze(GEO.plus(R, GEO.mal(GEO.minus(ende, R), 0.5)), r2, farbe);
@@ -1088,7 +1118,7 @@
             }
           }
         });
-        // Auge blickt zum Spiegel
+        // Auge blickt zur Scheibe
         var mitteR = ziele.reduce(function (s, p) { return GEO.plus(s, p); }, v(0, 0));
         mitteR = GEO.mal(mitteR, 1 / ziele.length);
         var blick = GEO.minus(mitteR, E);
@@ -1120,12 +1150,12 @@
       zeige(el.lotB, bilder.length > 0);
       if (bilder.length) linie(el.lotB, v(bilder[0].x, bilder[0].y + 12), v(bilder[0].x, RY - 12));
 
-      // Messung: Abstand des Schnittpunkts vom Spiegel
+      // Messung: Abstand des Schnittpunkts von der Scheibe
       if (bilder.length && ZEILEN.indexOf(d) >= 0 && messung[d] === undefined) {
         messung[d] = Math.round((bilder[0].x - MX) / S);
       }
 
-      el.wert.textContent = 'Abstand Gegenstand–Spiegel: ' + d + ' cm';
+      el.wert.textContent = 'Abstand Gegenstand–Scheibe: ' + d + ' cm';
       el.regler.value = String(d);
       el.punkt.classList.toggle('aktiv', form === 'punkt'); el.punkt.setAttribute('aria-pressed', form === 'punkt' ? 'true' : 'false');
       el.pfeil.classList.toggle('aktiv', form === 'pfeil'); el.pfeil.setAttribute('aria-pressed', form === 'pfeil' ? 'true' : 'false');
@@ -1182,8 +1212,8 @@
     }
     $('s2Reset').addEventListener('click', function () { startlage(); zeichne(); });
 
-    beimZeigen.strahlen = function () { zeichneSkalaZahlen(svg, el.zahlen); };
-    window.addEventListener('resize', function () { if (!$('modul-strahlen').hidden) zeichneSkalaZahlen(svg, el.zahlen); });
+    beimZeigen.strahlen = function () { zeichneSkalaZahlen(svg, el.zahlen); papierTextSetzen(); };
+    window.addEventListener('resize', function () { if (!$('modul-strahlen').hidden) { zeichneSkalaZahlen(svg, el.zahlen); papierTextSetzen(); } });
 
 
     startlage();
