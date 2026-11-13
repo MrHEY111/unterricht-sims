@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Das Spiegelbild</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d26;
+    --surface2: #242736;
+    --border: #2e3347;
+    --text: #e8eaf0;
+    --muted: #7b82a0;
+    --blue: #4a9eff;
+    --blue-dim: #1e3a5f;
+    --green: #2ecc71;
+    --yellow: #f5c842;
+    --wire-off: #3a4060;
+    --radius: 12px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+
+  .seite {
+    width: 100%;
+    max-width: 620px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* KOPF */
+  .kopf { display: flex; flex-direction: column; gap: 14px; text-align: center; }
+
+  .label-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 1px solid var(--blue);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+
+  h1 { font-size: 21px; font-weight: 600; margin-bottom: 4px; line-height: 1.25; }
+
+  /* REITER */
+  .reiter {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .reiter-taste {
+    flex: 1;
+    min-height: 48px;
+    padding: 0 10px;
+    border-radius: 9px;
+    border: 1.5px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .reiter-taste.aktiv { background: var(--blue-dim); border-color: var(--blue); color: #fff; }
+  @media (hover: hover) { .reiter-taste:not(.aktiv):hover { color: var(--text); background: var(--surface2); } }
+
+  /* MODUL */
+  .modul { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+  .modul[hidden] { display: none; }
+  .spalte { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  .card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .card-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 8px;
+  }
+  .card-label.weiter { margin-top: 16px; }
+
+  /* ZEICHNUNG */
+  .zeichnung svg { width: 100%; height: auto; display: block; -webkit-user-select: none; user-select: none; }
+  .zeichnung svg text { font-family: var(--mono); }
+  .skala-zahl {
+    fill: #c3c9de;
+    paint-order: stroke;
+    stroke: var(--surface);
+    stroke-width: 5px;
+    stroke-linejoin: round;
+  }
+  .bild-text { fill: var(--muted); font-size: 12px; letter-spacing: 0.08em; }
+  .papier-text { fill: #e8eaf0; font-size: 13px; font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 5px; stroke-linejoin: round; }
+
+  /* Nur die Ziehgriffe sperren das Scrollen, der Rest der Seite bleibt scrollbar. */
+  .griff { touch-action: none; cursor: grab; -webkit-tap-highlight-color: transparent; outline: none; }
+  .griff:focus-visible .ring { stroke: #fff; stroke-opacity: 0.9; }
+
+  .legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-top: 12px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .legende span { display: inline-flex; align-items: center; gap: 7px; }
+  .legende svg { width: 34px; height: 14px; flex-shrink: 0; }
+
+  /* BLICK DES AUGES */
+  .blick svg { width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid var(--border); }
+
+  /* STEUERKARTE */
+  .wert { font-family: var(--mono); font-size: 19px; font-weight: 500; margin-bottom: 10px; }
+  .stell-reihe { display: flex; gap: 10px; align-items: center; }
+  .tasten { display: flex; gap: 6px; }
+
+  .taste {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  }
+
+  .taste.pfeil { flex: 0 0 52px; font-size: 24px; line-height: 1; }
+  .taste:active { transform: translateY(1px); }
+  .taste.aktiv { background: var(--blue-dim); border-color: var(--blue); color: #fff; box-shadow: 0 0 12px rgba(74,158,255,0.25); }
+  @media (hover: hover) { .taste:not(.aktiv):hover { border-color: var(--blue); } }
+
+  .regler-schiene {
+    flex: 1;
+    min-width: 0;
+    height: 48px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .regler-schiene:focus { outline: none; }
+  .regler-schiene:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 8px; }
+  .regler-schiene::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--border); }
+  .regler-schiene::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 30px; height: 30px; margin-top: -12px;
+    border-radius: 50%;
+    background: var(--blue);
+    border: 3px solid #cfe3ff;
+  }
+  .regler-schiene::-moz-range-track { height: 6px; border-radius: 3px; background: var(--border); }
+  .regler-schiene::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: var(--blue); border: 3px solid #cfe3ff; }
+
+  .schalter-liste { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 16px; }
+
+  .schalter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 48px;
+    padding: 6px 14px 6px 10px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .schalter .bahn {
+    position: relative;
+    width: 44px; height: 26px;
+    border-radius: 13px;
+    background: var(--wire-off);
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .schalter .bahn::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #9aa1bb;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .schalter[aria-checked="true"] .bahn { background: var(--blue); }
+  .schalter[aria-checked="true"] .bahn::after { transform: translateX(18px); background: #fff; }
+
+  .reset-row { display: flex; justify-content: flex-end; margin-top: 14px; }
+
+  .reset {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 0 22px;
+    min-height: 46px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
+  }
+
+  .reset:active { transform: translateY(1px); background: var(--blue-dim); border-color: var(--blue); color: var(--text); }
+  @media (hover: hover) { .reset:hover { border-color: var(--blue); color: var(--text); } }
+
+  /* TABELLE */
+  .table-wrap {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    overflow-x: auto;
+  }
+
+  .table-header {
+    padding: 13px 16px 10px;
+    font-size: 12px;
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    padding: 9px 8px;
+    text-align: center;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    line-height: 1.3;
+  }
+
+  thead th:first-child { text-align: left; padding-left: 16px; }
+
+  tbody tr { transition: background 0.15s; }
+  tbody tr.current-row { background: rgba(245,200,66,0.08); box-shadow: inset 3px 0 0 var(--yellow); }
+  tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+
+  td { padding: 10px 8px; text-align: center; font-size: 14px; color: var(--text); line-height: 1.3; font-family: var(--mono); }
+  td:first-child { text-align: left; padding-left: 16px; white-space: nowrap; }
+
+  tbody tr.locked td { color: var(--muted); }
+  tbody tr.locked.current-row td { color: var(--text); }
+  td.offen { color: #5b6180 !important; letter-spacing: 0.15em; }
+
+  .row-indicator {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--yellow);
+    margin-right: 8px;
+    vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  tbody tr.current-row .row-indicator { opacity: 1; }
+
+  .hint { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.6; }
+
+  @media (max-width: 460px) {
+    h1 { font-size: 19px; }
+    .card { padding: 14px 12px; }
+    td, thead th { padding-left: 6px; padding-right: 6px; }
+    td:first-child, thead th:first-child { padding-left: 12px; }
+    td { font-size: 13px; }
+    .taste { font-size: 14px; }
+    .wert { font-size: 17px; }
+    .schalter { font-size: 14px; }
+  }
+
+  @media (min-width: 860px) {
+    .seite { max-width: 1100px; }
+    .kopf { flex-direction: row; align-items: flex-end; justify-content: space-between; text-align: left; gap: 24px; }
+    .reiter { width: 420px; flex-shrink: 0; }
+    .modul { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+    .hint { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="seite">
+
+<header class="kopf">
+  <div>
+    <div class="label-tag">Physik · Jahrgang 8</div>
+    <h1>Das Spiegelbild</h1>
+  </div>
+  <div class="reiter" role="tablist" aria-label="Module">
+    <button type="button" class="reiter-taste aktiv" role="tab" id="reiter-kerze" aria-controls="modul-kerze" aria-selected="true">Kerze und Glasscheibe</button>
+    <button type="button" class="reiter-taste" role="tab" id="reiter-strahlen" aria-controls="modul-strahlen" aria-selected="false">Strahlen</button>
+  </div>
+</header>
+
+<!-- ===================== MODUL 1 · KERZE UND GLASSCHEIBE ===================== -->
+<section class="modul" id="modul-kerze" role="tabpanel" aria-labelledby="reiter-kerze">
+  <div class="spalte">
+    <div class="card zeichnung">
+      <svg id="k1Bild" viewBox="0 0 600 485" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-label="Draufsicht: Glasscheibe, davor eine brennende Kerze und ein Auge, dahinter eine nicht brennende Kerze, unten eine Abstandsskala in Zentimetern">
+        <defs>
+          <radialGradient id="k1Schein" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffd27a" stop-opacity="0.75"/>
+            <stop offset="55%" stop-color="#f59e3c" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#f59e3c" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+
+        <text x="200" y="26" text-anchor="middle" class="bild-text">VORNE</text>
+        <text x="420" y="26" text-anchor="middle" class="bild-text">HINTEN</text>
+
+        <!-- Bogen, auf dem das Auge läuft -->
+        <path id="k1Bahn" fill="none" stroke="#4a9eff" stroke-opacity="0.3" stroke-width="2" stroke-dasharray="3 7"/>
+
+        <!-- Abstandsskala -->
+        <g id="k1Skala" stroke="#5b6180" stroke-width="1.5"></g>
+        <line id="k1LotVorne" stroke="#5b6180" stroke-width="1.2" stroke-dasharray="2 4"/>
+        <line id="k1LotHinten" stroke="#5b6180" stroke-width="1.2" stroke-dasharray="2 4"/>
+        <g id="k1Zahlen"></g>
+
+        <!-- Glasscheibe -->
+        <rect x="297" y="40" width="6" height="380" rx="2" fill="rgba(143,211,255,0.18)"/>
+        <line x1="300" y1="40" x2="300" y2="420" stroke="#8fd3ff" stroke-width="2.5" stroke-opacity="0.85"/>
+        <text x="300" y="434" text-anchor="middle" class="bild-text" id="k1ScheibeText">GLASSCHEIBE</text>
+
+        <!-- Hintere Kerze (brennt nicht) -->
+        <g id="k1Hinten" class="griff" tabindex="0" role="button" aria-label="Hintere Kerze verschieben (Pfeiltasten)">
+          <circle r="36" fill="transparent" pointer-events="all"/>
+          <circle class="ring" r="20" fill="none" stroke="#4a9eff" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <circle r="9" fill="#efe6cf" stroke="#9aa3c0" stroke-width="1.5"/>
+          <circle r="2" fill="#2b2b2b"/>
+        </g>
+
+        <!-- Vordere Kerze (brennt) -->
+        <g id="k1Vorne" class="griff" tabindex="0" role="button" aria-label="Vordere Kerze verschieben (Pfeiltasten links und rechts)">
+          <circle r="36" fill="transparent" pointer-events="all"/>
+          <circle r="26" fill="url(#k1Schein)"/>
+          <circle class="ring" r="20" fill="none" stroke="#4a9eff" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <circle r="9" fill="#efe6cf" stroke="#9aa3c0" stroke-width="1.5"/>
+          <circle r="4" fill="#ffb84a"/>
+          <circle r="1.8" fill="#fff4d6"/>
+        </g>
+
+        <!-- Auge mit Ziehgriff -->
+        <g id="k1Auge" class="griff" tabindex="0" role="button" aria-label="Auge verschieben (Pfeiltasten hoch und runter)">
+          <circle r="38" fill="transparent" pointer-events="all"/>
+          <circle class="ring" r="28" fill="none" stroke="#4a9eff" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <g id="k1AugeForm">
+            <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="#dfe3ee" stroke="#9aa3c0" stroke-width="1.5"/>
+            <circle cx="5" cy="0" r="6.5" fill="#4a9eff"/>
+            <circle cx="6" cy="0" r="3" fill="#0f1117"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="spalte">
+    <div class="card blick">
+      <span class="card-label">Das sieht das Auge</span>
+      <svg id="k1Blick" viewBox="0 0 320 130" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-label="Blick des Auges durch die Glasscheibe auf die hintere Kerze">
+        <defs>
+          <radialGradient id="k1FlammenSchein" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffd27a" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#f59e3c" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="k1FlammenFarbe" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stop-color="#ff9a2e"/>
+            <stop offset="55%" stop-color="#ffd35a"/>
+            <stop offset="100%" stop-color="#fff6d8"/>
+          </linearGradient>
+          <clipPath id="k1BlickClip"><rect width="320" height="130"/></clipPath>
+        </defs>
+        <rect width="320" height="130" fill="#050608"/>
+        <g clip-path="url(#k1BlickClip)">
+          <g id="k1BlickKerze">
+            <rect id="k1BlickKoerper" fill="#e9dfc6" stroke="#9aa3c0" stroke-width="1"/>
+            <line id="k1BlickDocht" stroke="#2b2b2b" stroke-linecap="round"/>
+          </g>
+          <g id="k1BlickFlamme" opacity="0.92">
+            <ellipse id="k1BlickSchein" fill="url(#k1FlammenSchein)"/>
+            <path id="k1BlickFlammenForm" fill="url(#k1FlammenFarbe)"/>
+          </g>
+        </g>
+        <rect width="320" height="130" fill="rgba(143,211,255,0.05)"/>
+      </svg>
+    </div>
+
+    <div class="card">
+      <div class="wert" id="k1Wert" aria-live="polite">Abstand vordere Kerze: 15 cm</div>
+      <div class="stell-reihe">
+        <button type="button" class="taste pfeil" id="k1Minus" aria-label="Vordere Kerze näher an die Scheibe">−</button>
+        <input type="range" class="regler-schiene" id="k1Regler" min="5" max="40" step="1" value="15" aria-label="Abstand der vorderen Kerze in Zentimetern">
+        <button type="button" class="taste pfeil" id="k1Plus" aria-label="Vordere Kerze weiter weg von der Scheibe">+</button>
+      </div>
+      <span class="card-label weiter">Auge verschieben</span>
+      <div class="stell-reihe">
+        <button type="button" class="taste pfeil" id="k1AugeMinus" aria-label="Auge nach oben">−</button>
+        <input type="range" class="regler-schiene" id="k1AugeRegler" min="-45" max="45" step="1" value="20" aria-label="Auge verschieben" aria-valuetext="Stellung des Auges">
+        <button type="button" class="taste pfeil" id="k1AugePlus" aria-label="Auge nach unten">+</button>
+      </div>
+      <div class="reset-row"><button type="button" class="reset" id="k1Reset">Zurücksetzen</button></div>
+    </div>
+
+    <p class="hint">Ziehe die Kerzen und das Auge oder nutze Regler und Tasten.</p>
+
+    <div class="table-wrap">
+      <div class="table-header">Messtabelle</div>
+      <table>
+        <thead>
+          <tr><th>Abstand vordere Kerze</th><th>Abstand hintere Kerze, wenn sie scheinbar brennt</th></tr>
+        </thead>
+        <tbody id="k1Tabelle"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MODUL 2 · STRAHLEN ===================== -->
+<section class="modul" id="modul-strahlen" role="tabpanel" aria-labelledby="reiter-strahlen" hidden>
+  <div class="spalte">
+    <div class="card zeichnung">
+      <svg id="s2Bild" viewBox="0 0 600 485" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-label="Draufsicht: ebener Spiegel, davor ein Gegenstand und ein oder zwei Augen, unten eine Abstandsskala in Zentimetern">
+        <defs>
+          <pattern id="s2Schraffur" patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(45)">
+            <rect width="9" height="9" fill="#1f2330"/>
+            <line x1="0" y1="0" x2="0" y2="9" stroke="#5b6180" stroke-width="2.5"/>
+          </pattern>
+        </defs>
+
+        <text x="200" y="26" text-anchor="middle" class="bild-text">VORNE</text>
+        <text x="420" y="26" text-anchor="middle" class="bild-text">HINTEN</text>
+
+        <!-- Abstandsskala -->
+        <g id="s2Skala" stroke="#5b6180" stroke-width="1.5"></g>
+        <line id="s2LotGegenstand" stroke="#5b6180" stroke-width="1.2" stroke-dasharray="2 4"/>
+        <line id="s2LotBild" stroke="#5b6180" stroke-width="1.2" stroke-dasharray="2 4"/>
+        <g id="s2Zahlen"></g>
+
+        <!-- Rückwärtige Verlängerungen und Bild -->
+        <g id="s2Verlaengerung"></g>
+        <g id="s2BildOrt"></g>
+
+        <!-- Spiegel: glatte Vorderseite links, schraffierte Rückseite rechts -->
+        <rect x="300" y="40" width="13" height="380" fill="url(#s2Schraffur)"/>
+        <line x1="300" y1="40" x2="300" y2="420" stroke="#dfe6f5" stroke-width="3.5"/>
+        <text x="300" y="434" text-anchor="middle" class="bild-text">SPIEGEL</text>
+
+        <!-- Blatt Papier -->
+        <g id="s2Papier" class="griff" tabindex="0" role="button" aria-label="Blatt Papier verschieben (Pfeiltasten)">
+          <rect x="-26" y="-48" width="52" height="96" fill="transparent" pointer-events="all"/>
+          <rect class="ring" x="-14" y="-40" width="28" height="80" rx="6" fill="none" stroke="#4a9eff" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <rect x="-3" y="-33" width="6" height="66" rx="1.5" fill="#f2f1ea" stroke="#9aa3c0" stroke-width="1"/>
+          <text id="s2PapierText" x="0" y="-46" text-anchor="middle" class="papier-text">kein Licht</text>
+        </g>
+
+        <!-- Lot, Winkel, Strahlen -->
+        <g id="s2Lote"></g>
+        <g id="s2Strahlen"></g>
+        <g id="s2WinkelZahlen"></g>
+
+        <!-- Gegenstand -->
+        <g id="s2Gegenstand" class="griff" tabindex="0" role="button" aria-label="Gegenstand verschieben (Pfeiltasten)">
+          <circle id="s2GegenstandFlaeche" r="36" fill="transparent" pointer-events="all"/>
+          <circle class="ring" r="18" fill="none" stroke="#4a9eff" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <g id="s2GegenstandForm"></g>
+        </g>
+
+        <!-- Auge 2 -->
+        <g id="s2Auge2" class="griff" tabindex="0" role="button" aria-label="Zweites Auge verschieben (Pfeiltasten)">
+          <circle r="38" fill="transparent" pointer-events="all"/>
+          <circle class="ring" r="28" fill="none" stroke="#4a9eff" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <g class="augeForm">
+            <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="#dfe3ee" stroke="#9aa3c0" stroke-width="1.5"/>
+            <circle cx="5" cy="0" r="6.5" fill="#4a9eff"/>
+            <circle cx="6" cy="0" r="3" fill="#0f1117"/>
+          </g>
+          <text x="0" y="-32" text-anchor="middle" class="bild-text">2</text>
+        </g>
+
+        <!-- Auge 1 -->
+        <g id="s2Auge1" class="griff" tabindex="0" role="button" aria-label="Auge verschieben (Pfeiltasten)">
+          <circle r="38" fill="transparent" pointer-events="all"/>
+          <circle class="ring" r="28" fill="none" stroke="#4a9eff" stroke-opacity="0.45" stroke-width="1.5" stroke-dasharray="3 5"/>
+          <g class="augeForm">
+            <path d="M -18 0 Q 0 -14 18 0 Q 0 14 -18 0 Z" fill="#dfe3ee" stroke="#9aa3c0" stroke-width="1.5"/>
+            <circle cx="5" cy="0" r="6.5" fill="#4a9eff"/>
+            <circle cx="6" cy="0" r="3" fill="#0f1117"/>
+          </g>
+          <text id="s2Auge1Nr" x="0" y="-32" text-anchor="middle" class="bild-text">1</text>
+        </g>
+      </svg>
+      <div class="legende">
+        <span><svg viewBox="0 0 34 14"><line x1="1" y1="7" x2="33" y2="7" stroke="#f5c842" stroke-width="3"/><path d="M 22 7 L 13 2 L 13 12 Z" fill="#f5c842"/></svg>Lichtstrahl</span>
+        <span><svg viewBox="0 0 34 14"><line x1="1" y1="7" x2="33" y2="7" stroke="#f5c842" stroke-width="2" stroke-dasharray="6 5" opacity="0.6"/></svg>rückwärts verlängert</span>
+        <span><svg viewBox="0 0 34 14"><line x1="1" y1="7" x2="33" y2="7" stroke="#c9ced6" stroke-width="2" stroke-dasharray="8 5"/></svg>Lot</span>
+        <span><svg viewBox="0 0 34 14"><rect x="1" y="2" width="32" height="10" fill="#1f2330" stroke="#5b6180"/><path d="M 5 12 L 13 2 M 13 12 L 21 2 M 21 12 L 29 2" stroke="#5b6180" stroke-width="2"/></svg>Rückseite des Spiegels</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="spalte">
+    <div class="card">
+      <span class="card-label" id="s2FormLabel">Gegenstand</span>
+      <div class="tasten" id="s2FormTasten" role="group" aria-labelledby="s2FormLabel">
+        <button type="button" class="taste aktiv" id="s2Punkt" aria-pressed="true">Punkt</button>
+        <button type="button" class="taste" id="s2Pfeil" aria-pressed="false">Pfeil</button>
+      </div>
+
+      <div class="wert" id="s2Wert" aria-live="polite" style="margin-top:16px">Abstand Gegenstand–Spiegel: 15 cm</div>
+      <div class="stell-reihe">
+        <button type="button" class="taste pfeil" id="s2Minus" aria-label="Gegenstand näher an den Spiegel">−</button>
+        <input type="range" class="regler-schiene" id="s2Regler" min="5" max="40" step="1" value="15" aria-label="Abstand Gegenstand–Spiegel in Zentimetern">
+        <button type="button" class="taste pfeil" id="s2Plus" aria-label="Gegenstand weiter weg vom Spiegel">+</button>
+      </div>
+
+      <div class="schalter-liste">
+        <button type="button" class="schalter" role="switch" aria-checked="false" id="s2ZweitesAuge"><span class="bahn" aria-hidden="true"></span>Zweites Auge</button>
+        <button type="button" class="schalter" role="switch" aria-checked="false" id="s2LotTaste"><span class="bahn" aria-hidden="true"></span>Lot einblenden</button>
+        <button type="button" class="schalter" role="switch" aria-checked="false" id="s2WinkelTaste"><span class="bahn" aria-hidden="true"></span>Winkel anzeigen</button>
+        <button type="button" class="schalter" role="switch" aria-checked="false" id="s2VerlTaste"><span class="bahn" aria-hidden="true"></span>Strahlen rückwärts verlängern</button>
+        <button type="button" class="schalter" role="switch" aria-checked="false" id="s2PapierTaste"><span class="bahn" aria-hidden="true"></span>Blatt Papier hinter den Spiegel</button>
+      </div>
+
+      <div class="reset-row"><button type="button" class="reset" id="s2Reset">Zurücksetzen</button></div>
+    </div>
+
+    <p class="hint">Ziehe Gegenstand, Augen und Blatt oder nutze Regler, Tasten und Schalter.</p>
+
+    <div class="table-wrap">
+      <div class="table-header">Messtabelle</div>
+      <table>
+        <thead>
+          <tr><th>Abstand Gegenstand–Spiegel</th><th>Abstand Schnittpunkt–Spiegel</th></tr>
+        </thead>
+        <tbody id="s2Tabelle"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Hilfen ---------- */
+  function $(id) { return document.getElementById(id); }
+  function begrenze(x, lo, hi) { return x < lo ? lo : (x > hi ? hi : x); }
+  function z(x) { return String(Math.round(x * 100) / 100); }
+  var SVGNS = 'http://www.w3.org/2000/svg';
+
+  function linie(el, a, b) {
+    el.setAttribute('x1', z(a.x)); el.setAttribute('y1', z(a.y));
+    el.setAttribute('x2', z(b.x)); el.setAttribute('y2', z(b.y));
+  }
+  function zeige(el, an) { el.style.display = an ? '' : 'none'; }
+  function schalterSetzen(taste, an) { taste.setAttribute('aria-checked', an ? 'true' : 'false'); }
+  function setzePos(el, p, drehung) {
+    el.setAttribute('transform', 'translate(' + z(p.x) + ' ' + z(p.y) + ')' + (drehung !== undefined ? ' rotate(' + z(drehung) + ')' : ''));
+  }
+
+  /* Ziehgriff: meldet die Zielposition in Bildkoordinaten (mit Griffversatz).
+     Pfeiltasten liefern Schritte von 1 cm. */
+  function ziehbar(griff, svg, holePos, beiPunkt, beiTaste) {
+    var zeiger = null, versatz = { x: 0, y: 0 };
+    function punkt(ev) {
+      var pt = svg.createSVGPoint();
+      pt.x = ev.clientX; pt.y = ev.clientY;
+      return pt.matrixTransform(svg.getScreenCTM().inverse());
+    }
+    griff.addEventListener('pointerdown', function (ev) {
+      if (ev.button !== undefined && ev.button > 0) return;
+      ev.preventDefault();
+      zeiger = ev.pointerId;
+      try { griff.setPointerCapture(ev.pointerId); } catch (f) { /* ältere Browser */ }
+      var p = punkt(ev), pos = holePos();
+      versatz = { x: pos.x - p.x, y: pos.y - p.y };
+    });
+    griff.addEventListener('pointermove', function (ev) {
+      if (ev.pointerId !== zeiger) return;
+      ev.preventDefault();
+      var p = punkt(ev);
+      beiPunkt({ x: p.x + versatz.x, y: p.y + versatz.y });
+    });
+    function los(ev) { if (ev.pointerId === zeiger) zeiger = null; }
+    griff.addEventListener('pointerup', los);
+    griff.addEventListener('pointercancel', los);
+    griff.addEventListener('lostpointercapture', los);
+    // Safari: Scrollen nur auf dem Griff unterdrücken
+    griff.addEventListener('touchstart', function (ev) { ev.preventDefault(); }, { passive: false });
+    if (beiTaste) {
+      griff.addEventListener('keydown', function (ev) {
+        var d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
+        if (!d) return;
+        ev.preventDefault();
+        beiTaste(d[0], d[1]);
+      });
+    }
+  }
+
+  /* =====================================================================
+     GEOMETRIE — reine Rechnung ohne Seitenelemente.
+     Bildkoordinaten: x nach rechts, y nach unten. Spiegel bzw. Scheibe
+     ist die senkrechte Linie x = MX. Vorne = links, hinten = rechts.
+     Abstände in cm, S Pixel je cm.
+     ===================================================================== */
+  // GEO-ANFANG
+  var GEO = (function () {
+    var MX = 300, AY = 215, S = 5.5, W = 600, H = 485, RY = 452;
+    var OBEN = 40, UNTEN = 420;   // Enden von Spiegel und Scheibe
+    function v(x, y) { return { x: x, y: y }; }
+    function plus(a, b) { return v(a.x + b.x, a.y + b.y); }
+    function minus(a, b) { return v(a.x - b.x, a.y - b.y); }
+    function mal(a, k) { return v(a.x * k, a.y * k); }
+    function skalar(a, b) { return a.x * b.x + a.y * b.y; }
+    function kreuz(a, b) { return a.x * b.y - a.y * b.x; }
+    function laenge(a) { return Math.sqrt(skalar(a, a)); }
+    function einheit(a) { var l = laenge(a); return l ? v(a.x / l, a.y / l) : v(0, 0); }
+    function rad(g) { return g * Math.PI / 180; }
+    function grad(r) { return r * 180 / Math.PI; }
+
+    // vorne: Abstand a vor der Scheibe, seitlich b (cm, b > 0 nach unten)
+    function vorne(a, b) { return v(MX - a * S, AY + b * S); }
+    function hinten(a, b) { return v(MX + a * S, AY + b * S); }
+    // Spiegelung an der Scheibe
+    function spiegelPunkt(p) { return v(2 * MX - p.x, p.y); }
+
+    // Auftreffpunkt des Lichts von Q über den Spiegel ins Auge E:
+    // Gerade E–Q' (Q' Spiegelpunkt von Q) schneidet die Spiegellinie.
+    function auftreff(q, e) {
+      var qs = spiegelPunkt(q);
+      var t = (MX - e.x) / (qs.x - e.x);
+      return v(MX, e.y + t * (qs.y - e.y));
+    }
+
+    // Schnitt zweier Geraden p1 + s·d1 und p2 + t·d2 (null bei nahezu parallel)
+    function schnitt(p1, d1, p2, d2) {
+      var n = kreuz(d1, d2);
+      if (Math.abs(n) < 1e-9) return null;
+      var s = kreuz(minus(p2, p1), d2) / n;
+      return plus(p1, mal(d1, s));
+    }
+
+    // Strahl von innen gegen den Bildrand
+    function bisRand(o, d) {
+      var tx = Infinity, ty = Infinity;
+      if (d.x > 1e-9) tx = (W - o.x) / d.x; else if (d.x < -1e-9) tx = -o.x / d.x;
+      if (d.y > 1e-9) ty = (RY - 14 - o.y) / d.y; else if (d.y < -1e-9) ty = (8 - o.y) / d.y;
+      return plus(o, mal(d, Math.min(tx, ty)));
+    }
+
+    // Winkel zwischen zwei Richtungen in Grad
+    function winkel(a, b) {
+      return grad(Math.acos(Math.max(-1, Math.min(1, skalar(einheit(a), einheit(b))))));
+    }
+
+    return {
+      MX: MX, AY: AY, S: S, W: W, H: H, RY: RY, OBEN: OBEN, UNTEN: UNTEN,
+      v: v, plus: plus, minus: minus, mal: mal, skalar: skalar, kreuz: kreuz, laenge: laenge, einheit: einheit,
+      rad: rad, grad: grad, vorne: vorne, hinten: hinten, spiegelPunkt: spiegelPunkt,
+      auftreff: auftreff, schnitt: schnitt, bisRand: bisRand, winkel: winkel
+    };
+  })();
+  // GEO-ENDE
+
+  var v = GEO.v, MX = GEO.MX, AY = GEO.AY, S = GEO.S, RY = GEO.RY;
+
+  /* ---------- Abstandsskala (beidseitig, 0 an Scheibe bzw. Spiegel) ---------- */
+  function baueSkala(gruppe) {
+    var a = v(MX - 40 * S, RY), b = v(MX + 40 * S, RY);
+    var l = document.createElementNS(SVGNS, 'line');
+    linie(l, a, b);
+    gruppe.appendChild(l);
+    for (var c = -40; c <= 40; c++) {
+      var lang = (c % 10 === 0), mittel = (c % 5 === 0);
+      var t = document.createElementNS(SVGNS, 'line');
+      var x = MX + c * S, h = lang ? 11 : (mittel ? 7 : 4);
+      linie(t, v(x, RY - h), v(x, RY));
+      if (lang) t.setAttribute('stroke-width', '2');
+      else if (!mittel) t.setAttribute('stroke-width', '1');
+      gruppe.appendChild(t);
+    }
+  }
+
+  function skalaMass(svg) {
+    var w = svg.getBoundingClientRect().width;
+    if (!w) return null;
+    var bildText = Math.max(12, 11 * 600 / w) + 'px';
+    var texte = svg.querySelectorAll('.bild-text');
+    for (var i = 0; i < texte.length; i++) texte[i].style.fontSize = bildText;
+    var papier = svg.querySelectorAll('.papier-text');
+    for (var j = 0; j < papier.length; j++) papier[j].style.fontSize = Math.max(13, 12.5 * 600 / w) + 'px';
+    return { fs: Math.max(12, 12 * 600 / w), schritt: w < 480 ? 10 : 5 };
+  }
+
+  function zeichneSkalaZahlen(svg, gruppe) {
+    var m = skalaMass(svg);
+    if (!m) return;
+    gruppe.textContent = '';
+    for (var c = -40; c <= 40; c += m.schritt) {
+      var t = document.createElementNS(SVGNS, 'text');
+      t.setAttribute('x', z(MX + c * S));
+      t.setAttribute('y', z(RY + 6 + m.fs * 0.85));
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('font-size', z(m.fs));
+      t.setAttribute('class', 'skala-zahl');
+      t.textContent = String(Math.abs(c));
+      gruppe.appendChild(t);
+    }
+    var cm = document.createElementNS(SVGNS, 'text');
+    cm.setAttribute('x', z(MX + 40 * S + 12));
+    cm.setAttribute('y', z(RY + 6 + m.fs * 0.85));
+    cm.setAttribute('font-size', z(m.fs));
+    cm.setAttribute('class', 'skala-zahl');
+    cm.textContent = 'cm';
+    gruppe.appendChild(cm);
+  }
+
+  function tabelleHtml(zeilen, messung, aktuell) {
+    var html = '';
+    zeilen.forEach(function (w) {
+      var m = messung[w], ist = (w === aktuell);
+      html += '<tr class="' + (ist ? 'current-row ' : '') + (m !== undefined ? '' : 'locked') + '">' +
+        '<td><span class="row-indicator"></span>' + w + ' cm</td>';
+      html += (m !== undefined) ? '<td>' + m + ' cm</td>' : '<td class="offen">…</td>';
+      html += '</tr>';
+    });
+    return html;
+  }
+
+  var ZEILEN = [10, 20, 30, 40];
+
+  /* ---------- Reiter ---------- */
+  var MODULE = ['kerze', 'strahlen'];
+  var beimZeigen = {};
+
+  function zeigeModul(name, adresse) {
+    MODULE.forEach(function (n) {
+      var an = (n === name);
+      $('modul-' + n).hidden = !an;
+      $('reiter-' + n).classList.toggle('aktiv', an);
+      $('reiter-' + n).setAttribute('aria-selected', an ? 'true' : 'false');
+    });
+    if (adresse) {
+      try { history.replaceState(null, '', '#' + name); } catch (f) { /* lokal geöffnet */ }
+    }
+    if (beimZeigen[name]) beimZeigen[name]();
+  }
+
+  MODULE.forEach(function (n) {
+    $('reiter-' + n).addEventListener('click', function () { zeigeModul(n, true); });
+  });
+
+  function ausAdresse() {
+    var h = (location.hash || '').replace('#', '');
+    return MODULE.indexOf(h) >= 0 ? h : null;
+  }
+  window.addEventListener('hashchange', function () { var h = ausAdresse(); if (h) zeigeModul(h, false); });
+
+  /* =====================================================================
+     MODUL 1 · KERZE UND GLASSCHEIBE
+     ===================================================================== */
+  (function () {
+    var RA = 270;                                   // Bogenradius des Auges um die Scheibenmitte
+    var START = { vorne: 15, hintenA: 28, hintenB: -9, phi: 20 };
+    var GRENZE = { hintenA: [1, 42], hintenB: [-18, 18], phi: [-45, 45] };
+
+    var dV, hA, hB, phi, messung;
+    var svg = $('k1Bild');
+    var el = {
+      vorne: $('k1Vorne'), hinten: $('k1Hinten'), auge: $('k1Auge'), augeForm: $('k1AugeForm'),
+      lotV: $('k1LotVorne'), lotH: $('k1LotHinten'), zahlen: $('k1Zahlen'),
+      wert: $('k1Wert'), regler: $('k1Regler'), augeRegler: $('k1AugeRegler'), tabelle: $('k1Tabelle'),
+      koerper: $('k1BlickKoerper'), docht: $('k1BlickDocht'), flamme: $('k1BlickFlamme'),
+      flammenForm: $('k1BlickFlammenForm'), schein: $('k1BlickSchein')
+    };
+
+    baueSkala($('k1Skala'));
+    (function () {
+      var a = augePos(GRENZE.phi[0]), b = augePos(GRENZE.phi[1]);
+      $('k1Bahn').setAttribute('d', 'M ' + z(a.x) + ' ' + z(a.y) + ' A ' + RA + ' ' + RA + ' 0 0 0 ' + z(b.x) + ' ' + z(b.y));
+    })();
+
+    function augePos(p) { return v(MX - RA * Math.cos(GEO.rad(p)), AY + RA * Math.sin(GEO.rad(p))); }
+    function posVorne() { return GEO.vorne(dV, 0); }
+    function posBild() { return GEO.spiegelPunkt(posVorne()); }
+    function posHinten() { return GEO.hinten(hA, hB); }
+
+    // Hintere Kerze steht am Bildort: höchstens 1 cm daneben
+    function amBildort() {
+      var dx = hA - dV, dy = hB;
+      return dx * dx + dy * dy <= 1;
+    }
+
+    function pruefeMessung() {
+      if (ZEILEN.indexOf(dV) >= 0 && messung[dV] === undefined && amBildort()) messung[dV] = hA;
+    }
+
+    /* Blick des Auges: Mitte = Richtung zur hinteren Kerze, 18° je Seite.
+       Augenhöhe = Kerzenoberkante (Horizont HOR). Größen fallen mit 1/Abstand. */
+    var HOR = 70, GRAD_PX = 160 / 18, GROESSE = 12000;
+    function flammenPfad(cx, fuss, h, b) {
+      var oben = fuss - h;
+      return 'M ' + z(cx) + ' ' + z(fuss) +
+        ' C ' + z(cx + b * 0.62) + ' ' + z(fuss - h * 0.08) + ' ' + z(cx + b * 0.45) + ' ' + z(fuss - h * 0.62) + ' ' + z(cx) + ' ' + z(oben) +
+        ' C ' + z(cx - b * 0.45) + ' ' + z(fuss - h * 0.62) + ' ' + z(cx - b * 0.62) + ' ' + z(fuss - h * 0.08) + ' ' + z(cx) + ' ' + z(fuss) + ' Z';
+    }
+
+    function zeichneBlick(E) {
+      var B = posHinten(), I = posBild();
+      var zuB = GEO.minus(B, E), zuI = GEO.minus(I, E);
+      var hK = GROESSE / GEO.laenge(zuB);
+      var delta = GEO.grad(Math.atan2(zuI.y, zuI.x) - Math.atan2(zuB.y, zuB.x));
+      while (delta > 180) delta -= 360;
+      while (delta < -180) delta += 360;
+      var genau = amBildort();
+      var hF = genau ? hK : GROESSE / GEO.laenge(zuI);
+      var xF = genau ? 160 : 160 + GRAD_PX * delta;
+
+      var bK = hK * 0.3;
+      el.koerper.setAttribute('x', z(160 - bK / 2)); el.koerper.setAttribute('y', z(HOR));
+      el.koerper.setAttribute('width', z(bK)); el.koerper.setAttribute('height', z(hK * 1.6));
+      el.koerper.setAttribute('rx', z(bK * 0.12));
+      linie(el.docht, v(160, HOR), v(160, HOR - hK * 0.12));
+      el.docht.setAttribute('stroke-width', z(Math.max(1.2, hK * 0.04)));
+
+      var fuss = HOR - hF * 0.1, hoehe = hF * 0.62, breite = hF * 0.28;
+      el.flammenForm.setAttribute('d', flammenPfad(xF, fuss, hoehe, breite));
+      el.schein.setAttribute('cx', z(xF)); el.schein.setAttribute('cy', z(fuss - hoehe * 0.45));
+      el.schein.setAttribute('rx', z(breite * 1.9)); el.schein.setAttribute('ry', z(hoehe * 0.95));
+      zeige(el.flamme, xF > -40 && xF < 360);
+    }
+
+    function zeichne() {
+      pruefeMessung();
+      var F = posVorne(), B = posHinten(), E = augePos(phi), I = posBild();
+      setzePos(el.vorne, F);
+      setzePos(el.hinten, B);
+      setzePos(el.auge, E);
+      var blick = GEO.minus(I, E);
+      el.augeForm.setAttribute('transform', 'rotate(' + z(GEO.grad(Math.atan2(blick.y, blick.x))) + ')');
+      linie(el.lotV, v(F.x, F.y + 12), v(F.x, RY - 12));
+      linie(el.lotH, v(B.x, B.y + 12), v(B.x, RY - 12));
+
+      zeichneBlick(E);
+
+      el.wert.textContent = 'Abstand vordere Kerze: ' + dV + ' cm';
+      el.regler.value = String(dV);
+      el.augeRegler.value = String(phi);
+      el.tabelle.innerHTML = tabelleHtml(ZEILEN, messung, dV);
+    }
+
+    function setzeVorne(d) { d = begrenze(Math.round(d), 5, 40); if (d !== dV) { dV = d; zeichne(); } }
+    function setzeHinten(a, b) {
+      a = begrenze(Math.round(a), GRENZE.hintenA[0], GRENZE.hintenA[1]);
+      b = begrenze(Math.round(b), GRENZE.hintenB[0], GRENZE.hintenB[1]);
+      if (a !== hA || b !== hB) { hA = a; hB = b; zeichne(); }
+    }
+    function setzeAuge(p) { p = begrenze(Math.round(p), GRENZE.phi[0], GRENZE.phi[1]); if (p !== phi) { phi = p; zeichne(); } }
+
+    ziehbar(el.vorne, svg, posVorne, function (p) { setzeVorne((MX - p.x) / S); },
+      function (dx) { setzeVorne(dV - dx); });
+    ziehbar(el.hinten, svg, posHinten, function (p) { setzeHinten((p.x - MX) / S, (p.y - AY) / S); },
+      function (dx, dy) { setzeHinten(hA + dx, hB + dy); });
+    ziehbar(el.auge, svg, function () { return augePos(phi); }, function (p) {
+      setzeAuge(GEO.grad(Math.atan2(p.y - AY, MX - p.x)));
+    }, function (dx, dy) { setzeAuge(phi + dy); });
+
+    el.regler.addEventListener('input', function () { setzeVorne(Number(el.regler.value)); });
+    $('k1Minus').addEventListener('click', function () { setzeVorne(dV - 1); });
+    $('k1Plus').addEventListener('click', function () { setzeVorne(dV + 1); });
+    el.augeRegler.addEventListener('input', function () { setzeAuge(Number(el.augeRegler.value)); });
+    $('k1AugeMinus').addEventListener('click', function () { setzeAuge(phi - 1); });
+    $('k1AugePlus').addEventListener('click', function () { setzeAuge(phi + 1); });
+
+    function startlage() {
+      dV = START.vorne; hA = START.hintenA; hB = START.hintenB; phi = START.phi; messung = {};
+    }
+    $('k1Reset').addEventListener('click', function () { startlage(); zeichne(); });
+
+    beimZeigen.kerze = function () { zeichneSkalaZahlen(svg, el.zahlen); };
+    window.addEventListener('resize', function () { if (!$('modul-kerze').hidden) zeichneSkalaZahlen(svg, el.zahlen); });
+
+
+    startlage();
+    zeichneSkalaZahlen(svg, el.zahlen);
+    zeichne();
+  })();
+
+  /* =====================================================================
+     MODUL 2 · STRAHLEN
+     ===================================================================== */
+  (function () {
+    var START = { d: 15, b: 0, augen: [{ a: 32, b: 17 }, { a: 34, b: -19 }], papier: { a: 30, b: 0 } };
+    var PFEIL = { a: 6, b: -8 };            // Pfeilspitze relativ zum Fußpunkt: 6 cm weiter vom Spiegel weg, 8 cm nach oben
+    var GELB = '#f5c842', ORANGE = '#ff9f43';
+
+    var form, d, b, augen, zweites, lot, winkelAn, verl, papierAn, papier, messung;
+    var svg = $('s2Bild');
+    var el = {
+      gegenstand: $('s2Gegenstand'), gegenstandForm: $('s2GegenstandForm'),
+      auge1: $('s2Auge1'), auge2: $('s2Auge2'), auge1Nr: $('s2Auge1Nr'),
+      papier: $('s2Papier'), strahlen: $('s2Strahlen'), lote: $('s2Lote'), winkelZahlen: $('s2WinkelZahlen'),
+      verl: $('s2Verlaengerung'), bildOrt: $('s2BildOrt'), lotG: $('s2LotGegenstand'), lotB: $('s2LotBild'),
+      zahlen: $('s2Zahlen'), wert: $('s2Wert'), regler: $('s2Regler'), tabelle: $('s2Tabelle'),
+      punkt: $('s2Punkt'), pfeil: $('s2Pfeil'),
+      zweites: $('s2ZweitesAuge'), lotTaste: $('s2LotTaste'), winkelTaste: $('s2WinkelTaste'),
+      verlTaste: $('s2VerlTaste'), papierTaste: $('s2PapierTaste')
+    };
+
+    baueSkala($('s2Skala'));
+
+    function fuss() { return GEO.vorne(d, b); }
+    function spitze() { return GEO.vorne(d + PFEIL.a, b + PFEIL.b); }
+    function punkte() { return form === 'pfeil' ? [fuss(), spitze()] : [fuss()]; }
+    function augePos(i) { return GEO.vorne(augen[i].a, augen[i].b); }
+    function sichtbareAugen() { return zweites ? [0, 1] : [0]; }
+    function papierPos() { return GEO.hinten(papier.a, papier.b); }
+
+    // Der Schnittpunkt existiert erst mit zwei Strahlen je Gegenstandspunkt.
+    function schnittSichtbar() { return verl && zweites; }
+
+    function pfeilSpitze(p, richtung, farbe, groesse) {
+      var k = groesse || 1;
+      return '<path d="M ' + z(10 * k) + ' 0 L ' + z(-7 * k) + ' ' + z(-8 * k) + ' L ' + z(-7 * k) + ' ' + z(8 * k) + ' Z" fill="' + farbe +
+        '" stroke="#0f1117" stroke-width="1.5" transform="translate(' + z(p.x) + ' ' + z(p.y) + ') rotate(' +
+        z(GEO.grad(Math.atan2(richtung.y, richtung.x))) + ')"/>';
+    }
+
+    function strecke(a, c, farbe, breite, extra) {
+      return '<line x1="' + z(a.x) + '" y1="' + z(a.y) + '" x2="' + z(c.x) + '" y2="' + z(c.y) +
+        '" stroke="' + farbe + '" stroke-width="' + breite + '" stroke-linecap="round"' + (extra || '') + '/>';
+    }
+
+    function bogenPfad(c, r, u1, u2) {
+      var a = GEO.plus(c, GEO.mal(u1, r)), e = GEO.plus(c, GEO.mal(u2, r));
+      var uhr = GEO.kreuz(u1, u2) > 0 ? 1 : 0;
+      return 'M ' + z(c.x) + ' ' + z(c.y) + ' L ' + z(a.x) + ' ' + z(a.y) +
+        ' A ' + r + ' ' + r + ' 0 0 ' + uhr + ' ' + z(e.x) + ' ' + z(e.y) + ' Z';
+    }
+
+    // Pfeil-Gegenstand (oder Bild) als Linie mit Spitze
+    function pfeilForm(f, s, farbe, deckkraft) {
+      var r = GEO.einheit(GEO.minus(s, f));
+      var ende = GEO.minus(s, GEO.mal(r, 9));
+      return '<g opacity="' + deckkraft + '">' + strecke(f, ende, farbe, 3.5) + pfeilSpitze(GEO.minus(s, GEO.mal(r, 6)), r, farbe, 1.05) + '</g>';
+    }
+
+    function zeichneGegenstand() {
+      var F = fuss();
+      setzePos(el.gegenstand, F);
+      var html = '';
+      if (form === 'pfeil') {
+        var lokS = GEO.minus(spitze(), F);
+        html += pfeilForm(v(0, 0), lokS, '#e8eaf0', 1);
+        html += '<circle cx="' + z(lokS.x) + '" cy="' + z(lokS.y) + '" r="4.5" fill="' + ORANGE + '" stroke="#0f1117" stroke-width="1.2"/>';
+      }
+      html += '<circle r="6.5" fill="' + GELB + '" stroke="#0f1117" stroke-width="1.5"/>';
+      el.gegenstandForm.innerHTML = html;
+    }
+
+    function zeichne() {
+      var P = punkte(), idx = sichtbareAugen();
+
+      // Gegenstand, Augen, Papier
+      zeichneGegenstand();
+      setzePos(el.auge1, augePos(0));
+      setzePos(el.auge2, augePos(1));
+      zeige(el.auge2, zweites);
+      zeige(el.auge1Nr, zweites);
+      zeige(el.papier, papierAn);
+      setzePos(el.papier, papierPos());
+
+      var strahlen = '', lote = '', zahlen = '', verlaengerung = '';
+      idx.forEach(function (i) {
+        var E = augePos(i), ziele = [];
+        P.forEach(function (Q, j) {
+          var farbe = j === 0 ? GELB : ORANGE;
+          var R = GEO.auftreff(Q, E);
+          ziele.push(R);
+          var r1 = GEO.einheit(GEO.minus(R, Q)), r2 = GEO.einheit(GEO.minus(E, R));
+          var ende = GEO.minus(E, GEO.mal(r2, 17));
+          // Lichtstrahl: Gegenstand → Spiegel → Auge
+          strahlen += strecke(Q, R, farbe, 3) + strecke(R, ende, farbe, 3);
+          strahlen += pfeilSpitze(GEO.plus(Q, GEO.mal(GEO.minus(R, Q), 0.55)), r1, farbe);
+          strahlen += pfeilSpitze(GEO.plus(R, GEO.mal(GEO.minus(ende, R), 0.5)), r2, farbe);
+
+          if (verl) {
+            var rand = GEO.bisRand(R, GEO.mal(r2, -1));
+            verlaengerung += strecke(R, rand, farbe, 2, ' stroke-dasharray="7 6" opacity="0.6"');
+          }
+
+          if (lot) {
+            var n = v(-1, 0), rad = 28;
+            lote += strecke(R, GEO.plus(R, GEO.mal(n, 62)), '#c9ced6', 2, ' stroke-dasharray="8 5" opacity="0.85"');
+            var zuQ = GEO.einheit(GEO.minus(Q, R)), zuE = GEO.einheit(GEO.minus(E, R));
+            var aE = GEO.winkel(zuQ, n), aR = GEO.winkel(zuE, n);
+            if (aE > 0.5) lote += '<path d="' + bogenPfad(R, rad, n, zuQ) + '" fill="rgba(74,158,255,0.22)" stroke="#4a9eff" stroke-width="2"/>';
+            if (aR > 0.5) lote += '<path d="' + bogenPfad(R, rad, n, zuE) + '" fill="rgba(46,204,113,0.22)" stroke="#2ecc71" stroke-width="2"/>';
+            if (winkelAn) {
+              [[zuQ, aE], [zuE, aR]].forEach(function (paar) {
+                // Zahl auf der Winkelhalbierenden; bei kleinen Winkeln weiter zum Strahl hin, damit sich die Zahlen nicht stapeln
+                var w = paar[1], lage = Math.min(w, Math.max(w / 2, 15));
+                var seite = paar[0].y < 0 ? -1 : 1;
+                var richtung = v(-Math.cos(GEO.rad(lage)), seite * Math.sin(GEO.rad(lage)));
+                var pos = GEO.plus(R, GEO.mal(richtung, rad + 19));
+                zahlen += '<text x="' + z(pos.x) + '" y="' + z(pos.y) + '" dy="0.35em" text-anchor="middle" font-size="13" class="skala-zahl">' +
+                  Math.round(paar[1]) + '°</text>';
+              });
+            }
+          }
+        });
+        // Auge blickt zum Spiegel
+        var mitteR = ziele.reduce(function (s, p) { return GEO.plus(s, p); }, v(0, 0));
+        mitteR = GEO.mal(mitteR, 1 / ziele.length);
+        var blick = GEO.minus(mitteR, E);
+        var formEl = (i === 0 ? el.auge1 : el.auge2).querySelector('.augeForm');
+        formEl.setAttribute('transform', 'rotate(' + z(GEO.grad(Math.atan2(blick.y, blick.x))) + ')');
+      });
+      el.strahlen.innerHTML = strahlen;
+      el.lote.innerHTML = lote;
+      el.winkelZahlen.innerHTML = zahlen;
+      el.verl.innerHTML = verlaengerung;
+
+      // Bildort: Schnitt der rückwärtigen Verlängerungen (nur mit zwei Augen)
+      var bilder = [], bildHtml = '';
+      if (schnittSichtbar()) {
+        P.forEach(function (Q) {
+          var E1 = augePos(0), E2 = augePos(1);
+          var R1 = GEO.auftreff(Q, E1), R2 = GEO.auftreff(Q, E2);
+          var X = GEO.schnitt(R1, GEO.minus(R1, E1), R2, GEO.minus(R2, E2)) || GEO.spiegelPunkt(Q);
+          bilder.push(X);
+        });
+        if (form === 'pfeil') bildHtml += pfeilForm(bilder[0], bilder[1], '#e8eaf0', 0.35);
+        bildHtml += '<circle cx="' + z(bilder[0].x) + '" cy="' + z(bilder[0].y) + '" r="6.5" fill="' + GELB + '" opacity="0.4"/>';
+        if (form === 'pfeil') bildHtml += '<circle cx="' + z(bilder[1].x) + '" cy="' + z(bilder[1].y) + '" r="4.5" fill="' + ORANGE + '" opacity="0.4"/>';
+      }
+      el.bildOrt.innerHTML = bildHtml;
+
+      var F = fuss();
+      linie(el.lotG, v(F.x, F.y + 12), v(F.x, RY - 12));
+      zeige(el.lotB, bilder.length > 0);
+      if (bilder.length) linie(el.lotB, v(bilder[0].x, bilder[0].y + 12), v(bilder[0].x, RY - 12));
+
+      // Messung: Abstand des Schnittpunkts vom Spiegel
+      if (bilder.length && ZEILEN.indexOf(d) >= 0 && messung[d] === undefined) {
+        messung[d] = Math.round((bilder[0].x - MX) / S);
+      }
+
+      el.wert.textContent = 'Abstand Gegenstand–Spiegel: ' + d + ' cm';
+      el.regler.value = String(d);
+      el.punkt.classList.toggle('aktiv', form === 'punkt'); el.punkt.setAttribute('aria-pressed', form === 'punkt' ? 'true' : 'false');
+      el.pfeil.classList.toggle('aktiv', form === 'pfeil'); el.pfeil.setAttribute('aria-pressed', form === 'pfeil' ? 'true' : 'false');
+      schalterSetzen(el.zweites, zweites);
+      schalterSetzen(el.lotTaste, lot);
+      schalterSetzen(el.winkelTaste, winkelAn);
+      schalterSetzen(el.verlTaste, verl);
+      schalterSetzen(el.papierTaste, papierAn);
+      el.tabelle.innerHTML = tabelleHtml(ZEILEN, messung, d);
+    }
+
+    function setzeGegenstand(nd, nb) {
+      nd = begrenze(Math.round(nd), 5, 40);
+      nb = begrenze(Math.round(nb), -16, 16);
+      if (nd !== d || nb !== b) { d = nd; b = nb; zeichne(); }
+    }
+    function setzeAuge(i, na, nb) {
+      na = begrenze(Math.round(na), 3, 50);
+      nb = begrenze(Math.round(nb), -33, 33);
+      if (na !== augen[i].a || nb !== augen[i].b) { augen[i] = { a: na, b: nb }; zeichne(); }
+    }
+    function setzePapier(na, nb) {
+      na = begrenze(Math.round(na), 4, 42);
+      nb = begrenze(Math.round(nb), -28, 28);
+      if (na !== papier.a || nb !== papier.b) { papier = { a: na, b: nb }; zeichne(); }
+    }
+
+    ziehbar(el.gegenstand, svg, fuss, function (p) { setzeGegenstand((MX - p.x) / S, (p.y - AY) / S); },
+      function (dx, dy) { setzeGegenstand(d - dx, b + dy); });
+    [el.auge1, el.auge2].forEach(function (g, i) {
+      ziehbar(g, svg, function () { return augePos(i); }, function (p) { setzeAuge(i, (MX - p.x) / S, (p.y - AY) / S); },
+        function (dx, dy) { setzeAuge(i, augen[i].a - dx, augen[i].b + dy); });
+    });
+    ziehbar(el.papier, svg, papierPos, function (p) { setzePapier((p.x - MX) / S, (p.y - AY) / S); },
+      function (dx, dy) { setzePapier(papier.a + dx, papier.b + dy); });
+
+    el.regler.addEventListener('input', function () { setzeGegenstand(Number(el.regler.value), b); });
+    $('s2Minus').addEventListener('click', function () { setzeGegenstand(d - 1, b); });
+    $('s2Plus').addEventListener('click', function () { setzeGegenstand(d + 1, b); });
+    el.punkt.addEventListener('click', function () { form = 'punkt'; zeichne(); });
+    el.pfeil.addEventListener('click', function () { form = 'pfeil'; zeichne(); });
+    el.zweites.addEventListener('click', function () { zweites = !zweites; zeichne(); });
+    el.lotTaste.addEventListener('click', function () { lot = !lot; zeichne(); });
+    el.winkelTaste.addEventListener('click', function () { winkelAn = !winkelAn; if (winkelAn) lot = true; zeichne(); });
+    el.verlTaste.addEventListener('click', function () { verl = !verl; zeichne(); });
+    el.papierTaste.addEventListener('click', function () { papierAn = !papierAn; zeichne(); });
+
+    function startlage() {
+      form = 'punkt'; d = START.d; b = START.b;
+      augen = START.augen.map(function (a) { return { a: a.a, b: a.b }; });
+      papier = { a: START.papier.a, b: START.papier.b };
+      zweites = false; lot = false; winkelAn = false; verl = false; papierAn = false;
+      messung = {};
+    }
+    $('s2Reset').addEventListener('click', function () { startlage(); zeichne(); });
+
+    beimZeigen.strahlen = function () { zeichneSkalaZahlen(svg, el.zahlen); };
+    window.addEventListener('resize', function () { if (!$('modul-strahlen').hidden) zeichneSkalaZahlen(svg, el.zahlen); });
+
+
+    startlage();
+    zeichne();
+  })();
+
+  zeigeModul(ausAdresse() || 'kerze', false);
+})();
+</script>
+</body>
+</html>
